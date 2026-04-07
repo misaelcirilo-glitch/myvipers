@@ -76,7 +76,7 @@ export default function ReservarPage() {
     const upcomingReservations = reservations.filter(r => r.status !== 'cancelled' && r.status !== 'completed' && r.status !== 'no_show');
 
     return (
-        <div className="px-4 pt-6 space-y-6 pb-4">
+        <div className="px-4 pt-6 space-y-6 pb-4 max-w-2xl mx-auto">
             <h1 className="text-xl font-black">Reservar Mesa</h1>
 
             {/* Success */}
@@ -134,12 +134,12 @@ export default function ReservarPage() {
                     <label className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-2 flex items-center gap-2">
                         <Users size={14} /> Personas
                     </label>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-8 gap-2">
                         {PARTY_SIZES.map(size => (
                             <button
                                 key={size} type="button"
                                 onClick={() => setPartySize(size)}
-                                className={`w-10 h-10 rounded-xl text-sm font-bold transition-all ${partySize === size
+                                className={`aspect-square rounded-xl text-sm font-bold transition-all ${partySize === size
                                     ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
                                     : 'bg-white/5 text-slate-400 border border-white/10'
                                 }`}

@@ -52,7 +52,7 @@ export default function PuntosPage() {
     const progress = nextLevel ? Math.min(100, ((user?.totalPoints || 0) / nextLevel.min) * 100) : 100;
 
     return (
-        <div className="px-4 pt-6 space-y-5 pb-4">
+        <div className="px-4 pt-6 space-y-5 pb-4 max-w-2xl mx-auto">
             <h1 className="text-xl font-black">Mis Puntos VIP</h1>
 
             {/* Points Card */}

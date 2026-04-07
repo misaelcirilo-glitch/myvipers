@@ -4,9 +4,10 @@ import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
 
 const schema = z.object({
-    phone: z.string().min(9),
+    phone: z.string().optional(),
+    userId: z.string().uuid().optional(),
     amount: z.number().min(0.01),
-});
+}).refine(d => d.phone || d.userId, { message: 'phone o userId requerido' });
 
 export async function POST(req: Request) {
     const session = await getSession();
@@ -19,18 +20,24 @@ export async function POST(req: Request) {
         const parsed = schema.safeParse(body);
         if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
-        const { phone, amount } = parsed.data;
+        const { phone, userId, amount } = parsed.data;
 
-        // Normalizar: solo digitos, ultimos 9 (cubre +51, espacios, guiones)
-        const normalizedDigits = phone.replace(/\D/g, '');
-        const last9 = normalizedDigits.slice(-9);
+        let customer;
+        if (userId) {
+            customer = await db`
+                SELECT id, name, available_points, total_points, vip_level
+                FROM users WHERE id = ${userId} LIMIT 1
+            `;
+        } else {
+            const last9 = (phone || '').replace(/\D/g, '').slice(-9);
+            customer = await db`
+                SELECT id, name, available_points, total_points, vip_level
+                FROM users
+                WHERE RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 9) = ${last9}
+                LIMIT 1
+            `;
+        }
 
-        const customer = await db`
-            SELECT id, name, available_points, total_points, vip_level
-            FROM users
-            WHERE RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 9) = ${last9}
-            LIMIT 1
-        `;
         if (customer.length === 0) {
             return NextResponse.json({ error: 'Cliente no encontrado. Debe registrarse primero.' }, { status: 404 });
         }

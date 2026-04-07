@@ -48,7 +48,7 @@ export default function CartaPage() {
     const displayMenu = search ? filteredMenu : (activeCategory ? menu.filter(c => c.id === activeCategory) : menu);
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-2xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between px-4 pt-6">
                 <div>

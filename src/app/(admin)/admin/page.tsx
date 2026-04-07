@@ -7,7 +7,10 @@ import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Fla
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
     const router = useRouter();
-    const [phone, setPhone] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searching, setSearching] = useState(false);
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [assigning, setAssigning] = useState(false);
     const [result, setResult] = useState<any>(null);
@@ -136,20 +139,36 @@ export default function AdminPage() {
         }
     };
 
+    // Buscar clientes con debounce
+    useEffect(() => {
+        if (searchQuery.trim().length < 2) { setSearchResults([]); return; }
+        setSearching(true);
+        const t = setTimeout(() => {
+            fetch(`/api/admin/customers?q=${encodeURIComponent(searchQuery)}`)
+                .then(r => r.json())
+                .then(d => setSearchResults(d.customers || []))
+                .finally(() => setSearching(false));
+        }, 300);
+        return () => clearTimeout(t);
+    }, [searchQuery]);
+
     const handleAssignPoints = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!selectedCustomer) return;
         setAssigning(true);
         setResult(null);
         try {
             const res = await fetch('/api/admin/points', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone, amount: parseFloat(amount) }),
+                body: JSON.stringify({ userId: selectedCustomer.id, amount: parseFloat(amount) }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             setResult(data);
-            setPhone('');
+            setSelectedCustomer(null);
+            setSearchQuery('');
+            setSearchResults([]);
             setAmount('');
         } catch (err: any) {
             setResult({ error: err.message });
@@ -162,7 +181,7 @@ export default function AdminPage() {
     if (!user || (user.role !== 'admin' && user.role !== 'waiter')) return null;
 
     return (
-        <div className="min-h-dvh bg-[#0f0f1a] px-4 pt-6 pb-8 space-y-6">
+        <div className="min-h-dvh bg-[#0f0f1a] px-4 pt-6 pb-8 space-y-6 max-w-2xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -202,14 +221,54 @@ export default function AdminPage() {
                     <TrendingUp size={16} /> Asignar Puntos
                 </h2>
                 <form onSubmit={handleAssignPoints} className="space-y-3">
-                    <div className="relative">
-                        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                        <input
-                            type="tel" placeholder="Celular del cliente" required
-                            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
-                            value={phone} onChange={e => setPhone(e.target.value)}
-                        />
-                    </div>
+                    {/* Cliente seleccionado o buscador */}
+                    {selectedCustomer ? (
+                        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-black shrink-0">
+                                {selectedCustomer.name[0]?.toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-bold text-white text-sm truncate">{selectedCustomer.name}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{selectedCustomer.phone} · {selectedCustomer.available_points} pts</p>
+                            </div>
+                            <button type="button" onClick={() => { setSelectedCustomer(null); setSearchQuery(''); }} className="text-slate-400 hover:text-red-400 shrink-0">
+                                <X size={18} />
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="relative">
+                            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                            <input
+                                type="text" placeholder="Buscar por nombre o teléfono..."
+                                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
+                                value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery.length >= 2 && (
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a2a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 max-h-64 overflow-y-auto">
+                                    {searching && <p className="text-center text-slate-500 text-xs py-3">Buscando...</p>}
+                                    {!searching && searchResults.length === 0 && (
+                                        <p className="text-center text-slate-500 text-xs py-3">Sin resultados</p>
+                                    )}
+                                    {searchResults.map(c => (
+                                        <button
+                                            key={c.id} type="button"
+                                            onClick={() => { setSelectedCustomer(c); setSearchQuery(''); setSearchResults([]); }}
+                                            className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition text-left border-b border-white/5 last:border-0"
+                                        >
+                                            <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-black text-xs shrink-0">
+                                                {c.name[0]?.toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-white text-sm truncate">{c.name}</p>
+                                                <p className="text-[10px] text-slate-500 truncate">{c.phone} · {c.available_points} pts · {c.vip_level}</p>
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">S/</span>
                         <input
@@ -219,10 +278,10 @@ export default function AdminPage() {
                         />
                     </div>
                     <button
-                        type="submit" disabled={assigning}
-                        className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                        type="submit" disabled={assigning || !selectedCustomer}
+                        className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {assigning ? 'Asignando...' : 'Asignar Puntos'}
+                        {assigning ? 'Asignando...' : selectedCustomer ? 'Asignar Puntos' : 'Selecciona un cliente'}
                     </button>
                 </form>
 

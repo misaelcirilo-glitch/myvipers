@@ -20,7 +20,7 @@ export default function PerfilPage() {
     };
 
     return (
-        <div className="px-4 pt-6 space-y-6">
+        <div className="px-4 pt-6 space-y-6 max-w-2xl mx-auto">
             {/* Profile Card */}
             <div className={`bg-gradient-to-br ${VIP_COLORS[user?.vipLevel || 'bronce']} rounded-2xl p-6 text-center space-y-3`}>
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto">
