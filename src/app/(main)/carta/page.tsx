@@ -67,7 +67,7 @@ export default function CartaPage() {
                 <input
                     type="text"
                     placeholder="Buscar plato..."
-                    className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
+                    className="w-full pl-10 pr-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
                     value={search}
                     onChange={e => setSearch(e.target.value)}
                 />
@@ -82,7 +82,7 @@ export default function CartaPage() {
                             onClick={() => setActiveCategory(cat.id)}
                             className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all ${activeCategory === cat.id
                                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                : 'bg-white/5 text-slate-400 border border-white/10'
+                                : 'bg-[#1a1a2e] text-slate-400 border border-[#2a2a3e]'
                             }`}
                         >
                             {cat.name}
@@ -105,7 +105,7 @@ export default function CartaPage() {
                                 {cat.items.map(item => (
                                     <div
                                         key={item.id}
-                                        className={`bg-white/5 border rounded-2xl overflow-hidden transition-all ${item.is_featured ? 'border-amber-500/30 shadow-lg shadow-amber-500/5' : 'border-white/10'}`}
+                                        className={`bg-[#1a1a2e] border rounded-2xl overflow-hidden transition-all ${item.is_featured ? 'border-amber-500/30' : 'border-[#2a2a3e]'}`}
                                     >
                                         <div className="p-4 flex gap-3">
                                             {/* Foto pequena */}

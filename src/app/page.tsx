@@ -13,7 +13,7 @@ export default function LandingPage() {
     }, [user, loading, router]);
 
     return (
-        <div className="min-h-dvh flex flex-col items-center justify-center px-6 bg-gradient-to-b from-[#1a1a2e] via-[#16213e] to-[#0f0f1a]">
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-[#0f0f1a]">
             <div className="text-center space-y-6 max-w-sm">
                 <div className="w-24 h-24 bg-gradient-to-br from-amber-500 to-red-600 rounded-3xl flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/20">
                     <Flame size={48} className="text-white" />
@@ -51,7 +51,7 @@ export default function LandingPage() {
                     </button>
                     <button
                         onClick={() => router.push('/login')}
-                        className="w-full py-4 bg-white/5 border border-white/10 text-slate-300 font-bold text-sm uppercase tracking-widest rounded-2xl hover:bg-white/10 active:scale-95 transition-all"
+                        className="w-full py-4 bg-[#1a1a2e] border border-[#2a2a3e] text-slate-300 font-bold text-sm uppercase tracking-widest rounded-2xl hover:bg-[#22223a] active:scale-95 transition-all"
                     >
                         Ya tengo cuenta
                     </button>

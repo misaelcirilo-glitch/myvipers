@@ -80,7 +80,7 @@ export default function PuntosPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10">
+            <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e]">
                 <button
                     onClick={() => setTab('rewards')}
                     className={`flex-1 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${tab === 'rewards' ? 'bg-amber-500 text-white' : 'text-slate-400'}`}
@@ -101,7 +101,7 @@ export default function PuntosPage() {
                     {rewards.map(r => {
                         const canRedeem = (user?.availablePoints || 0) >= r.points_cost;
                         return (
-                            <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between">
+                            <div key={r.id} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-4 flex items-center justify-between">
                                 <div className="flex-1">
                                     <h3 className="font-bold text-white text-sm">{r.name}</h3>
                                     <p className="text-slate-400 text-xs mt-0.5">{r.description}</p>
@@ -116,7 +116,7 @@ export default function PuntosPage() {
                                     disabled={!canRedeem || redeeming === r.id}
                                     className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${canRedeem
                                         ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95'
-                                        : 'bg-white/5 text-slate-500 cursor-not-allowed'
+                                        : 'bg-[#1a1a2e] text-slate-500 cursor-not-allowed'
                                     }`}
                                 >
                                     {redeeming === r.id ? '...' : 'Canjear'}

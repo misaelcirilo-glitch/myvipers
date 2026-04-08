@@ -98,7 +98,7 @@ export default function ReservarPage() {
                     </label>
                     <input
                         type="date" required min={today}
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white outline-none focus:border-amber-500 transition"
                         value={date} onChange={e => setDate(e.target.value)}
                     />
                 </div>
@@ -118,7 +118,7 @@ export default function ReservarPage() {
                                             onClick={() => setTime(slot)}
                                             className={`py-2.5 rounded-xl text-xs font-bold transition-all ${time === slot
                                                 ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                                : 'bg-white/5 text-slate-400 border border-white/10 hover:border-amber-500/30'
+                                                : 'bg-[#1a1a2e] text-slate-400 border border-[#2a2a3e] hover:border-amber-500/30'
                                             }`}
                                         >
                                             {slot}
@@ -141,7 +141,7 @@ export default function ReservarPage() {
                                 onClick={() => setPartySize(size)}
                                 className={`aspect-square rounded-xl text-sm font-bold transition-all ${partySize === size
                                     ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20'
-                                    : 'bg-white/5 text-slate-400 border border-white/10'
+                                    : 'bg-[#1a1a2e] text-slate-400 border border-[#2a2a3e]'
                                 }`}
                             >
                                 {size}
@@ -156,7 +156,7 @@ export default function ReservarPage() {
                     </label>
                     <textarea
                         placeholder="Cumpleaños, alergias, silla para bebé..."
-                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm resize-none h-20"
+                        className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm resize-none h-20"
                         value={notes} onChange={e => setNotes(e.target.value)}
                     />
                 </div>
@@ -183,7 +183,7 @@ export default function ReservarPage() {
                         {upcomingReservations.map(r => {
                             const s = statusLabels[r.status] || statusLabels.pending;
                             return (
-                                <div key={r.id} className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                                <div key={r.id} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-4">
                                     <div className="flex items-center justify-between mb-2">
                                         <div className="flex items-center gap-3">
                                             <CalendarDays size={16} className="text-amber-400" />

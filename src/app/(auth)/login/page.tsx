@@ -31,7 +31,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-dvh flex flex-col px-6 py-8 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a]">
+        <div className="min-h-screen flex flex-col px-6 py-8 bg-[#0f0f1a]">
             <Link href="/" className="flex items-center gap-2 text-slate-400 text-sm mb-8">
                 <ArrowLeft size={16} /> Volver
             </Link>
@@ -48,12 +48,12 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="tel" placeholder="Tu número de celular" required
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
                     />
                     <input
                         type="password" placeholder="Contraseña" required
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                     />
 

@@ -23,7 +23,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
     if (loading) {
         return (
-            <div className="min-h-dvh flex items-center justify-center bg-[#0f0f1a]">
+            <div className="min-h-screen flex items-center justify-center bg-[#0f0f1a]">
                 <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
             </div>
         );
@@ -32,11 +32,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     if (!user) return null;
 
     return (
-        <div className="min-h-dvh flex flex-col bg-[#0f0f1a] pb-20">
+        <div className="min-h-screen flex flex-col bg-[#0f0f1a] pb-20">
             <div className="flex-1">{children}</div>
 
             {/* Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-[#1a1a2e]/95 backdrop-blur-xl border-t border-white/5 px-2 py-2 z-50">
+            <nav className="fixed bottom-0 left-0 right-0 bg-[#1a1a2e] border-t border-[#2a2a3e] px-2 py-2 z-50">
                 <div className="flex items-center justify-around max-w-md mx-auto">
                     {NAV_ITEMS.map(item => {
                         const isActive = pathname === item.href;

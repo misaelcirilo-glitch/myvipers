@@ -177,11 +177,11 @@ export default function AdminPage() {
         }
     };
 
-    if (loading) return <div className="min-h-dvh flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>;
+    if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>;
     if (!user || (user.role !== 'admin' && user.role !== 'waiter')) return null;
 
     return (
-        <div className="min-h-dvh bg-[#0f0f1a] px-4 pt-6 pb-8 space-y-6 max-w-2xl mx-auto">
+        <div className="min-h-screen bg-[#0f0f1a] px-4 pt-6 pb-8 space-y-6 max-w-2xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
@@ -198,17 +198,17 @@ export default function AdminPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
                     <CalendarDays size={18} className="text-blue-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayReservations?.length || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Reservas hoy</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
                     <Users size={18} className="text-green-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.totalCustomers || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Clientes VIP</p>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-3 text-center">
+                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
                     <Star size={18} className="text-amber-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayPoints || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Puntos hoy</p>
@@ -216,7 +216,7 @@ export default function AdminPage() {
             </div>
 
             {/* Assign Points Form */}
-            <div className="bg-gradient-to-br from-amber-500/10 to-red-500/10 border border-amber-500/20 rounded-2xl p-5">
+            <div className="bg-[#1a1a2e] border border-amber-500/30 rounded-2xl p-5">
                 <h2 className="text-sm font-black uppercase tracking-widest text-amber-400 mb-4 flex items-center gap-2">
                     <TrendingUp size={16} /> Asignar Puntos
                 </h2>
@@ -240,11 +240,11 @@ export default function AdminPage() {
                             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                             <input
                                 type="text" placeholder="Buscar por nombre o teléfono..."
-                                className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
+                                className="w-full pl-10 pr-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
                                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
                             />
                             {searchQuery.length >= 2 && (
-                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a2a] border border-white/10 rounded-xl overflow-hidden shadow-2xl z-10 max-h-64 overflow-y-auto">
+                                <div className="absolute top-full left-0 right-0 mt-2 bg-[#1a1a2a] border border-[#2a2a3e] rounded-xl overflow-hidden shadow-2xl z-10 max-h-64 overflow-y-auto">
                                     {searching && <p className="text-center text-slate-500 text-xs py-3">Buscando...</p>}
                                     {!searching && searchResults.length === 0 && (
                                         <p className="text-center text-slate-500 text-xs py-3">Sin resultados</p>
@@ -253,7 +253,7 @@ export default function AdminPage() {
                                         <button
                                             key={c.id} type="button"
                                             onClick={() => { setSelectedCustomer(c); setSearchQuery(''); setSearchResults([]); }}
-                                            className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-white/5 transition text-left border-b border-white/5 last:border-0"
+                                            className="w-full px-3 py-2.5 flex items-center gap-3 hover:bg-[#1a1a2e] transition text-left border-b border-white/5 last:border-0"
                                         >
                                             <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-black text-xs shrink-0">
                                                 {c.name[0]?.toUpperCase()}
@@ -273,13 +273,13 @@ export default function AdminPage() {
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">S/</span>
                         <input
                             type="number" step="0.01" placeholder="Importe consumido" required min="1"
-                            className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
+                            className="w-full pl-10 pr-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
                             value={amount} onChange={e => setAmount(e.target.value)}
                         />
                     </div>
                     <button
                         type="submit" disabled={assigning || !selectedCustomer}
-                        className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {assigning ? 'Asignando...' : selectedCustomer ? 'Asignar Puntos' : 'Selecciona un cliente'}
                     </button>
@@ -300,7 +300,7 @@ export default function AdminPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex bg-white/5 rounded-xl p-1 border border-white/10 overflow-x-auto">
+            <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e] overflow-x-auto">
                 {[
                     { id: 'reservations', label: 'Reservas', icon: CalendarDays },
                     { id: 'carta', label: 'Carta', icon: UtensilsCrossed },
@@ -325,7 +325,7 @@ export default function AdminPage() {
                     {(dashboard?.todayReservations || []).length === 0 ? (
                         <p className="text-slate-500 text-sm text-center py-6">Sin reservas hoy</p>
                     ) : (dashboard?.todayReservations || []).map((r: any) => (
-                        <div key={r.id} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                        <div key={r.id} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl p-3 flex items-center justify-between">
                             <div>
                                 <p className="font-bold text-sm">{r.customer_name}</p>
                                 <p className="text-xs text-slate-400">{r.customer_phone} | Mesa {r.table_number} | {r.party_size} pers.</p>
@@ -343,7 +343,7 @@ export default function AdminPage() {
                     {(dashboard?.pendingRedemptions || []).length === 0 ? (
                         <p className="text-slate-500 text-sm text-center py-6">Sin canjes pendientes</p>
                     ) : (dashboard?.pendingRedemptions || []).map((rd: any) => (
-                        <div key={rd.id} className="bg-white/5 border border-white/10 rounded-xl p-3 flex items-center justify-between">
+                        <div key={rd.id} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl p-3 flex items-center justify-between">
                             <div>
                                 <p className="font-bold text-sm">{rd.customer_name}</p>
                                 <p className="text-xs text-amber-400">{rd.reward_name}</p>
@@ -369,22 +369,22 @@ export default function AdminPage() {
                     </div>
 
                     {showPromoForm && (
-                        <form onSubmit={handleCreatePromo} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                        <form onSubmit={handleCreatePromo} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-4 space-y-3">
                             <input
                                 type="text" placeholder="Título (ej: 2x1 en Ceviches)" required
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
+                                className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
                                 value={promoForm.title} onChange={e => setPromoForm({ ...promoForm, title: e.target.value })}
                             />
                             <textarea
                                 placeholder="Descripción (ej: Válido solo los viernes de 18:00 a 21:00)"
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm resize-none h-16"
+                                className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm resize-none h-16"
                                 value={promoForm.description} onChange={e => setPromoForm({ ...promoForm, description: e.target.value })}
                             />
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
                                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Tipo</label>
                                     <select
-                                        className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-amber-500"
+                                        className="w-full px-3 py-2.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white text-sm outline-none focus:border-amber-500"
                                         value={promoForm.discount_type} onChange={e => setPromoForm({ ...promoForm, discount_type: e.target.value })}
                                     >
                                         <option value="percentage">% Descuento</option>
@@ -397,7 +397,7 @@ export default function AdminPage() {
                                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Valor</label>
                                     <input
                                         type="number" step="0.01" placeholder="Ej: 20"
-                                        className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 text-sm"
+                                        className="w-full px-3 py-2.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 text-sm"
                                         value={promoForm.discount_value} onChange={e => setPromoForm({ ...promoForm, discount_value: e.target.value })}
                                     />
                                 </div>
@@ -407,7 +407,7 @@ export default function AdminPage() {
                                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Desde</label>
                                     <input
                                         type="date"
-                                        className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-amber-500"
+                                        className="w-full px-3 py-2.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white text-sm outline-none focus:border-amber-500"
                                         value={promoForm.valid_from} onChange={e => setPromoForm({ ...promoForm, valid_from: e.target.value })}
                                     />
                                 </div>
@@ -415,14 +415,14 @@ export default function AdminPage() {
                                     <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Hasta</label>
                                     <input
                                         type="date"
-                                        className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm outline-none focus:border-amber-500"
+                                        className="w-full px-3 py-2.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white text-sm outline-none focus:border-amber-500"
                                         value={promoForm.valid_until} onChange={e => setPromoForm({ ...promoForm, valid_until: e.target.value })}
                                     />
                                 </div>
                             </div>
                             <button
                                 type="submit" disabled={promoLoading}
-                                className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                                className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
                             >
                                 {promoLoading ? 'Creando...' : 'Publicar Promoción'}
                             </button>
@@ -432,7 +432,7 @@ export default function AdminPage() {
                     {promotions.length === 0 ? (
                         <p className="text-slate-500 text-sm text-center py-6">Sin promociones creadas</p>
                     ) : promotions.map((p: any) => (
-                        <div key={p.id} className={`bg-white/5 border rounded-2xl p-4 ${p.is_active ? 'border-amber-500/20' : 'border-white/10 opacity-50'}`}>
+                        <div key={p.id} className={`bg-[#1a1a2e] border rounded-2xl p-4 ${p.is_active ? 'border-amber-500/20' : 'border-[#2a2a3e] opacity-50'}`}>
                             <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2">
@@ -476,12 +476,12 @@ export default function AdminPage() {
                                     <button
                                         key={item.id}
                                         onClick={() => setEditingItem({ ...item })}
-                                        className={`w-full bg-white/5 border rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition text-left ${item.is_available ? 'border-white/10' : 'border-red-500/30 opacity-50'}`}
+                                        className={`w-full bg-[#1a1a2e] border rounded-xl p-3 flex items-center gap-3 hover:bg-white/10 transition text-left ${item.is_available ? 'border-[#2a2a3e]' : 'border-red-500/30 opacity-50'}`}
                                     >
                                         {item.image_url ? (
                                             <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
                                         ) : (
-                                            <div className="w-12 h-12 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                            <div className="w-12 h-12 rounded-lg bg-[#1a1a2e] flex items-center justify-center shrink-0">
                                                 <UtensilsCrossed size={16} className="text-slate-600" />
                                             </div>
                                         )}
@@ -507,8 +507,8 @@ export default function AdminPage() {
 
             {/* Edit Item Modal */}
             {editingItem && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-                    <form onSubmit={handleSaveItem} className="bg-[#0f0f1a] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="fixed inset-0 bg-black/80 z-50 flex items-end sm:items-center justify-center">
+                    <form onSubmit={handleSaveItem} className="bg-[#0f0f1a] border border-[#2a2a3e] rounded-t-3xl sm:rounded-3xl w-full max-w-md p-5 max-h-[90vh] overflow-y-auto space-y-4">
                         <div className="flex items-center justify-between">
                             <h3 className="font-black text-white">Editar plato</h3>
                             <button type="button" onClick={() => setEditingItem(null)} className="text-slate-400">
@@ -523,7 +523,7 @@ export default function AdminPage() {
                                 {editingItem.image_url ? (
                                     <img src={editingItem.image_url} alt="" className="w-full aspect-video rounded-xl object-cover" />
                                 ) : (
-                                    <div className="w-full aspect-video rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                                    <div className="w-full aspect-video rounded-xl bg-[#1a1a2e] border border-[#2a2a3e] flex items-center justify-center">
                                         <UtensilsCrossed size={32} className="text-slate-600" />
                                     </div>
                                 )}
@@ -540,7 +540,7 @@ export default function AdminPage() {
                                 type="text" placeholder="O pega URL de imagen..."
                                 value={editingItem.image_url || ''}
                                 onChange={e => setEditingItem({ ...editingItem, image_url: e.target.value })}
-                                className="w-full mt-2 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white outline-none focus:border-amber-500 text-xs"
+                                className="w-full mt-2 px-3 py-2 bg-[#1a1a2e] border border-[#2a2a3e] rounded-lg text-white outline-none focus:border-amber-500 text-xs"
                             />
                         </div>
 
@@ -550,7 +550,7 @@ export default function AdminPage() {
                             <input
                                 type="text" required value={editingItem.name}
                                 onChange={e => setEditingItem({ ...editingItem, name: e.target.value })}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                                className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white outline-none focus:border-amber-500 text-sm"
                             />
                         </div>
 
@@ -560,7 +560,7 @@ export default function AdminPage() {
                             <textarea
                                 value={editingItem.description || ''}
                                 onChange={e => setEditingItem({ ...editingItem, description: e.target.value })}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm h-20 resize-none"
+                                className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white outline-none focus:border-amber-500 text-sm h-20 resize-none"
                             />
                         </div>
 
@@ -570,7 +570,7 @@ export default function AdminPage() {
                             <input
                                 type="number" step="0.01" min="0" required value={editingItem.price}
                                 onChange={e => setEditingItem({ ...editingItem, price: e.target.value })}
-                                className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-lg font-black"
+                                className="w-full px-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white outline-none focus:border-amber-500 text-lg font-black"
                             />
                         </div>
 
@@ -596,7 +596,7 @@ export default function AdminPage() {
 
                         <button
                             type="submit" disabled={savingItem}
-                            className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-lg shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                            className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
                         >
                             {savingItem ? 'Guardando...' : 'Guardar cambios'}
                         </button>

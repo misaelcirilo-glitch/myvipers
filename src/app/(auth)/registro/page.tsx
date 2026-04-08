@@ -31,7 +31,7 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-dvh flex flex-col px-6 py-8 bg-gradient-to-b from-[#1a1a2e] to-[#0f0f1a]">
+        <div className="min-h-screen flex flex-col px-6 py-8 bg-[#0f0f1a]">
             <Link href="/" className="flex items-center gap-2 text-slate-400 text-sm mb-8">
                 <ArrowLeft size={16} /> Volver
             </Link>
@@ -48,29 +48,29 @@ export default function RegisterPage() {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="text" placeholder="Tu nombre completo" required
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
                     />
                     <input
                         type="tel" placeholder="Celular (ej: 943123456)" required
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
                     />
                     <input
                         type="email" placeholder="Email (opcional)"
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                     />
                     <input
                         type="password" placeholder="Crea una contraseña" required
-                        className="w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                        className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                     />
                     <div className="relative">
                         <Gift size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400" />
                         <input
                             type="text" placeholder="Código de referido (opcional)"
-                            className="w-full pl-10 pr-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
+                            className="w-full pl-10 pr-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                             value={form.referralCode} onChange={e => setForm({ ...form, referralCode: e.target.value.toUpperCase() })}
                         />
                     </div>
