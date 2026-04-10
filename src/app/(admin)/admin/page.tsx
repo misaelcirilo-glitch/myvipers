@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/shared/lib/useSession';
 import { useRouter } from 'next/navigation';
-import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2 } from 'lucide-react';
+import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone } from 'lucide-react';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -15,7 +15,11 @@ export default function AdminPage() {
     const [assigning, setAssigning] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [dashboard, setDashboard] = useState<any>(null);
-    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta'>('reservations');
+    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta' | 'clientes'>('reservations');
+    const [showRegisterCustomer, setShowRegisterCustomer] = useState(false);
+    const [registerForm, setRegisterForm] = useState({ name: '', phone: '', email: '' });
+    const [registerLoading, setRegisterLoading] = useState(false);
+    const [registerResult, setRegisterResult] = useState<any>(null);
     const [menuItems, setMenuItems] = useState<any[]>([]);
     const [menuCategories, setMenuCategories] = useState<any[]>([]);
     const [editingItem, setEditingItem] = useState<any>(null);
@@ -303,6 +307,7 @@ export default function AdminPage() {
             <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e] overflow-x-auto">
                 {[
                     { id: 'reservations', label: 'Reservas', icon: CalendarDays },
+                    { id: 'clientes', label: 'Clientes', icon: Users },
                     { id: 'carta', label: 'Carta', icon: UtensilsCrossed },
                     { id: 'promos', label: 'Promos', icon: Megaphone },
                     { id: 'redemptions', label: 'Canjes', icon: Gift },
@@ -619,6 +624,103 @@ export default function AdminPage() {
                             </span>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Clientes Tab */}
+            {tab === 'clientes' && (
+                <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Clientes VIP</h3>
+                        <button
+                            onClick={() => { setShowRegisterCustomer(!showRegisterCustomer); setRegisterResult(null); }}
+                            className="flex items-center gap-1 text-xs font-bold text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-full"
+                        >
+                            <UserPlus size={14} /> Registrar cliente
+                        </button>
+                    </div>
+
+                    {showRegisterCustomer && (
+                        <div className="bg-[#1a1a2e] border border-emerald-500/20 rounded-2xl p-4 space-y-3">
+                            <h4 className="text-sm font-bold text-white">Registro rápido de cliente</h4>
+                            <p className="text-[10px] text-slate-500">El cliente recibirá 50 puntos de bienvenida. La contraseña será los últimos 4 dígitos de su teléfono.</p>
+                            <input
+                                type="text" placeholder="Nombre completo *" required
+                                value={registerForm.name}
+                                onChange={e => setRegisterForm(p => ({ ...p, name: e.target.value }))}
+                                className="w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm"
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                                <input
+                                    type="tel" placeholder="Teléfono *" required
+                                    value={registerForm.phone}
+                                    onChange={e => setRegisterForm(p => ({ ...p, phone: e.target.value }))}
+                                    className="w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm"
+                                />
+                                <input
+                                    type="email" placeholder="Email (opcional)"
+                                    value={registerForm.email}
+                                    onChange={e => setRegisterForm(p => ({ ...p, email: e.target.value }))}
+                                    className="w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm"
+                                />
+                            </div>
+                            <button
+                                onClick={async () => {
+                                    if (!registerForm.name || !registerForm.phone) return;
+                                    setRegisterLoading(true); setRegisterResult(null);
+                                    try {
+                                        const res = await fetch('/api/admin/register-customer', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify(registerForm),
+                                        });
+                                        const data = await res.json();
+                                        if (!res.ok) throw new Error(data.error);
+                                        setRegisterResult(data);
+                                        setRegisterForm({ name: '', phone: '', email: '' });
+                                    } catch (err: any) {
+                                        setRegisterResult({ error: err.message });
+                                    } finally { setRegisterLoading(false); }
+                                }}
+                                disabled={registerLoading || !registerForm.name || !registerForm.phone}
+                                className="w-full py-3 bg-emerald-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                            >
+                                {registerLoading ? 'Registrando...' : 'Registrar Cliente VIP'}
+                            </button>
+
+                            {registerResult && !registerResult.error && (
+                                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 flex items-start gap-3">
+                                    <Check size={20} className="text-emerald-400 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="font-bold text-emerald-400 text-sm">{registerResult.customer} registrado</p>
+                                        <p className="text-emerald-400/60 text-xs mt-0.5">
+                                            <Phone size={10} className="inline mr-1" />{registerResult.phone} · +{registerResult.points} pts
+                                        </p>
+                                        <p className="text-emerald-400/60 text-[10px] mt-1">
+                                            Contraseña temporal: <span className="font-mono font-bold text-emerald-300">{registerResult.password}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                            {registerResult?.error && (
+                                <p className="text-red-400 text-sm text-center">{registerResult.error}</p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Lista de clientes */}
+                    <div className="space-y-2">
+                        {(dashboard?.totalCustomers || 0) > 0 ? (
+                            <p className="text-sm text-slate-500 text-center py-4">
+                                {dashboard.totalCustomers} clientes VIP registrados.
+                                Busca uno en la sección "Asignar Puntos" de arriba.
+                            </p>
+                        ) : (
+                            <p className="text-sm text-slate-500 text-center py-6">
+                                Sin clientes aún. Registra el primero con el botón de arriba.
+                            </p>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
