@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
+import { db } from './db';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'myvipers-secret-2026');
 
@@ -33,7 +34,30 @@ export async function getSession(): Promise<Session | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
     if (!token) return null;
-    return verifyToken(token);
+
+    const session = await verifyToken(token);
+    if (!session) return null;
+
+    // Compatibilidad con tokens antiguos (sin restaurantId): resolver desde BD
+    if (!session.restaurantId) {
+        try {
+            const rows = await db`
+                SELECT u.restaurant_id, r.slug
+                FROM users u
+                LEFT JOIN restaurants r ON r.id = u.restaurant_id
+                WHERE u.id = ${session.userId}
+                LIMIT 1
+            `;
+            if (rows.length > 0 && rows[0].restaurant_id) {
+                session.restaurantId = rows[0].restaurant_id;
+                session.restaurantSlug = rows[0].slug || '';
+            }
+        } catch (e) {
+            console.error('Error resolving restaurant from session:', e);
+        }
+    }
+
+    return session;
 }
 
 export async function setSessionCookie(token: string) {
