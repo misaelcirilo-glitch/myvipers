@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSession } from '@/shared/lib/useSession';
-import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
@@ -9,7 +8,6 @@ import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Fla
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
-    const { t, formatPrice, currencyConfig } = useI18n();
     const { restaurant } = useRestaurant();
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
