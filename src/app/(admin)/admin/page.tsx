@@ -4,7 +4,7 @@ import { useSession } from '@/shared/lib/useSession';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
-import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles } from 'lucide-react';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -334,8 +334,21 @@ export default function AdminPage() {
     if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" /></div>;
     if (!user || (user.role !== 'admin' && user.role !== 'waiter')) return null;
 
+    const isDemo = user.phone === '944933545';
+
     return (
         <div className="min-h-screen bg-[#0f0f1a] px-4 pt-6 pb-8 space-y-6 max-w-2xl mx-auto">
+            {isDemo && (
+                <div className="bg-gradient-to-r from-amber-500/20 to-red-500/20 border border-amber-500/30 rounded-2xl p-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Sparkles size={16} className="text-amber-400 shrink-0" />
+                        <p className="text-xs font-bold text-amber-200 truncate">Modo demo · Los cambios no se guardan</p>
+                    </div>
+                    <a href="/crear-restaurante" className="bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg hover:brightness-110 transition shrink-0">
+                        Crear cuenta real
+                    </a>
+                </div>
+            )}
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
