@@ -188,9 +188,25 @@ export const es = {
         referralShare: 'Comparte y gana 100 puntos por cada amigo',
         logout: 'Cerrar sesión',
     },
+    // Promociones
+    promociones: {
+        title: 'Promociones',
+        subtitle: 'Ofertas exclusivas para ti',
+        off: 'dto',
+        freeItem: 'Item gratis',
+        pointsMultiplier: 'puntos',
+        from: 'Desde',
+        until: 'Hasta',
+        requires: 'Requiere',
+        points: 'pts',
+        unlocked: 'Disponible',
+        empty: 'Sin promociones activas',
+        emptyHint: 'Vuelve pronto para ver nuevas ofertas',
+    },
     // Nav
     nav: {
         carta: 'Carta',
+        promos: 'Promos',
         reservar: 'Reservar',
         puntos: 'Puntos',
         perfil: 'Perfil',

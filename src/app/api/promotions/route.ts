@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
 
+// GET: promociones activas y vigentes. Por slug (público) o por sesión del cliente.
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const slug = searchParams.get('slug');
