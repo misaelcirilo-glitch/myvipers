@@ -3,11 +3,12 @@ import { useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
-import { UtensilsCrossed, CalendarDays, Star, User } from 'lucide-react';
+import { UtensilsCrossed, CalendarDays, Star, User, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 
 const NAV_ITEMS = [
     { href: '/carta', icon: UtensilsCrossed, key: 'carta' as const },
+    { href: '/promociones', icon: Megaphone, key: 'promos' as const },
     { href: '/reservar', icon: CalendarDays, key: 'reservar' as const },
     { href: '/puntos', icon: Star, key: 'puntos' as const },
     { href: '/perfil', icon: User, key: 'perfil' as const },
