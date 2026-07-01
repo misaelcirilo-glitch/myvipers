@@ -33,12 +33,15 @@ export default function PromocionesPage() {
     const discountBadge = (p: Promotion) => {
         switch (p.discount_type) {
             case 'percentage':
+                if (p.discount_value == null) return null;
                 return { icon: Percent, label: `${p.discount_value}% ${t.promociones.off}` };
             case 'fixed':
-                return { icon: Tag, label: `${formatPrice(Number(p.discount_value || 0))} ${t.promociones.off}` };
+                if (p.discount_value == null) return null;
+                return { icon: Tag, label: `${formatPrice(Number(p.discount_value))} ${t.promociones.off}` };
             case 'free_item':
                 return { icon: Gift, label: t.promociones.freeItem };
             case 'points_multiplier':
+                if (p.discount_value == null) return null;
                 return { icon: Sparkles, label: `x${p.discount_value} ${t.promociones.pointsMultiplier}` };
             default:
                 return null;
