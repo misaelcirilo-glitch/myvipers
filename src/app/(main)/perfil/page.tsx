@@ -3,6 +3,7 @@ import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
+import { PushToggle } from '@/shared/components/PushToggle';
 import { User, Star, Share2, LogOut, Flame } from 'lucide-react';
 
 export default function PerfilPage() {
@@ -67,6 +68,9 @@ export default function PerfilPage() {
                     {t.perfil.referralShare.replace('100', String(restaurant.referral_bonus))}
                 </p>
             </div>
+
+            {/* Push notifications */}
+            <PushToggle />
 
             {/* Logout */}
             <button

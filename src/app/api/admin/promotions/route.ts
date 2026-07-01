@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
+import { sendPushToRestaurant } from '@/shared/lib/push-server';
 
 export async function GET() {
     const session = await getSession();
@@ -22,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { title, description, discount_type, discount_value, min_points, valid_from, valid_until } = body;
+    const { title, description, discount_type, discount_value, min_points, valid_from, valid_until, notify } = body;
 
     if (!title) return NextResponse.json({ error: 'El título es obligatorio' }, { status: 400 });
 
@@ -32,7 +33,17 @@ export async function POST(req: Request) {
         RETURNING *
     `;
 
-    return NextResponse.json({ promotion: result[0] });
+    let push = null;
+    if (notify) {
+        push = await sendPushToRestaurant(session.restaurantId, {
+            title,
+            body: description || '¡Aprovecha esta promoción!',
+            url: '/puntos',
+            tag: `promo-${result[0].id}`,
+        });
+    }
+
+    return NextResponse.json({ promotion: result[0], push });
 }
 
 export async function PATCH(req: Request) {
