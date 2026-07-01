@@ -3,16 +3,10 @@ import { useState, useEffect } from 'react';
 import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
-import { Star, Gift, TrendingUp, TrendingDown, Award, Sparkles, Tag } from 'lucide-react';
+import { Star, Gift, TrendingUp, TrendingDown, Award, Sparkles } from 'lucide-react';
 
 interface PointHistory { type: string; points: number; description: string; created_at: string; }
 interface Reward { id: string; name: string; description: string; points_cost: number; category: string; }
-interface Promotion {
-    id: string; title: string; description: string | null; image_url: string | null;
-    discount_type: 'percentage' | 'fixed' | 'free_item' | 'points_multiplier' | null;
-    discount_value: number | null; min_points: number;
-    valid_from: string | null; valid_until: string | null;
-}
 
 export default function PuntosPage() {
     const { user, refresh } = useSession();
@@ -20,7 +14,6 @@ export default function PuntosPage() {
     const { vipLevels } = useRestaurant();
     const [history, setHistory] = useState<PointHistory[]>([]);
     const [rewards, setRewards] = useState<Reward[]>([]);
-    const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [tab, setTab] = useState<'rewards' | 'history'>('rewards');
     const [redeeming, setRedeeming] = useState<string | null>(null);
 
@@ -28,9 +21,6 @@ export default function PuntosPage() {
         fetch('/api/points').then(r => r.json()).then(data => {
             setHistory(data.history || []);
             setRewards(data.rewards || []);
-        });
-        fetch('/api/promotions').then(r => r.json()).then(data => {
-            setPromotions(data.promotions || []);
         });
     }, []);
 
@@ -91,47 +81,6 @@ export default function PuntosPage() {
                     </div>
                 )}
             </div>
-
-            {/* Promociones activas */}
-            {promotions.length > 0 && (
-                <div className="space-y-2">
-                    <h2 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-slate-400">
-                        <Tag size={12} className="text-amber-400" /> Promociones activas
-                    </h2>
-                    <div className="space-y-2">
-                        {promotions.map(p => (
-                            <div key={p.id} className="bg-gradient-to-br from-amber-500/10 to-red-500/5 border border-amber-500/20 rounded-2xl p-4">
-                                <div className="flex items-start gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center shrink-0">
-                                        <Tag size={18} className="text-amber-400" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="font-black text-white text-sm">{p.title}</p>
-                                        {p.description && <p className="text-xs text-slate-400 mt-0.5">{p.description}</p>}
-                                        <div className="flex items-center gap-2 mt-2 flex-wrap text-[10px]">
-                                            {p.discount_type === 'percentage' && p.discount_value != null && (
-                                                <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">-{p.discount_value}%</span>
-                                            )}
-                                            {p.discount_type === 'fixed' && p.discount_value != null && (
-                                                <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">-S/{p.discount_value}</span>
-                                            )}
-                                            {p.discount_type === 'free_item' && (
-                                                <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">Item gratis</span>
-                                            )}
-                                            {p.discount_type === 'points_multiplier' && p.discount_value != null && (
-                                                <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold">x{p.discount_value} puntos</span>
-                                            )}
-                                            {p.valid_until && (
-                                                <span className="text-slate-500">Hasta {new Date(p.valid_until).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
 
             {/* Tabs */}
             <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e]">
