@@ -4,7 +4,7 @@ import { useSession } from '@/shared/lib/useSession';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
-import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles } from 'lucide-react';
+import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell } from 'lucide-react';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -34,8 +34,9 @@ export default function AdminPage() {
     const [uploading, setUploading] = useState(false);
     const [promotions, setPromotions] = useState<any[]>([]);
     const [showPromoForm, setShowPromoForm] = useState(false);
-    const [promoForm, setPromoForm] = useState({ title: '', description: '', discount_type: 'percentage', discount_value: '', min_points: '', valid_from: '', valid_until: '' });
+    const [promoForm, setPromoForm] = useState({ title: '', description: '', discount_type: 'percentage', discount_value: '', min_points: '', valid_from: '', valid_until: '', notify: true });
     const [promoLoading, setPromoLoading] = useState(false);
+    const [notifyingPromo, setNotifyingPromo] = useState<string | null>(null);
     const [rewards, setRewards] = useState<any[]>([]);
     const [showRewardForm, setShowRewardForm] = useState(false);
     const [rewardForm, setRewardForm] = useState({ name: '', description: '', points_cost: '', category: 'free_item' });
@@ -125,7 +126,7 @@ export default function AdminPage() {
         e.preventDefault();
         setPromoLoading(true);
         try {
-            await fetch('/api/admin/promotions', {
+            const res = await fetch('/api/admin/promotions', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -134,10 +135,35 @@ export default function AdminPage() {
                     min_points: promoForm.min_points ? parseInt(promoForm.min_points) : 0,
                 }),
             });
-            setPromoForm({ title: '', description: '', discount_type: 'percentage', discount_value: '', min_points: '', valid_from: '', valid_until: '' });
+            const data = await res.json();
+            if (data.push && !data.push.skipped) {
+                alert(`Promoción publicada. Notificación enviada a ${data.push.sent} dispositivo${data.push.sent === 1 ? '' : 's'}.`);
+            } else if (data.push?.skipped) {
+                alert('Promoción publicada. Web Push no está configurado (faltan claves VAPID).');
+            }
+            setPromoForm({ title: '', description: '', discount_type: 'percentage', discount_value: '', min_points: '', valid_from: '', valid_until: '', notify: true });
             setShowPromoForm(false);
         } finally {
             setPromoLoading(false);
+        }
+    };
+
+    const notifyPromo = async (id: string) => {
+        setNotifyingPromo(id);
+        try {
+            const res = await fetch('/api/admin/push/notify-promo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ promotionId: id }),
+            });
+            const data = await res.json();
+            if (!res.ok) {
+                alert(data.error || 'Error al notificar');
+                return;
+            }
+            alert(`Notificación enviada a ${data.sent} dispositivo${data.sent === 1 ? '' : 's'}.`);
+        } finally {
+            setNotifyingPromo(null);
         }
     };
 
@@ -594,6 +620,16 @@ export default function AdminPage() {
                                     />
                                 </div>
                             </div>
+                            <label className="flex items-center gap-2 px-3 py-2 bg-[#0f0f1a] border border-[#2a2a3e] rounded-xl cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={promoForm.notify}
+                                    onChange={e => setPromoForm({ ...promoForm, notify: e.target.checked })}
+                                    className="accent-amber-500"
+                                />
+                                <Bell size={14} className="text-amber-400" />
+                                <span className="text-xs font-bold text-slate-300">Notificar a clientes suscritos al publicar</span>
+                            </label>
                             <button
                                 type="submit" disabled={promoLoading}
                                 className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
@@ -624,6 +660,16 @@ export default function AdminPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
+                                    {p.is_active && (
+                                        <button
+                                            onClick={() => notifyPromo(p.id)}
+                                            disabled={notifyingPromo === p.id}
+                                            title="Notificar a clientes suscritos"
+                                            className="p-1.5 text-slate-400 hover:text-amber-400 transition disabled:opacity-50"
+                                        >
+                                            {notifyingPromo === p.id ? <Loader2 size={16} className="animate-spin" /> : <Bell size={16} />}
+                                        </button>
+                                    )}
                                     <button onClick={() => togglePromo(p.id, p.is_active)} className="p-1.5 text-slate-400 hover:text-amber-400 transition">
                                         {p.is_active ? <ToggleRight size={20} className="text-green-400" /> : <ToggleLeft size={20} />}
                                     </button>

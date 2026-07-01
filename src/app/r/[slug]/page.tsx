@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Star, UtensilsCrossed, CalendarDays, Loader2, Phone, MapPin, Zap } from 'lucide-react';
+import { Star, UtensilsCrossed, CalendarDays, Loader2, Phone, MapPin, Zap, Tag } from 'lucide-react';
 import Link from 'next/link';
 
 interface Restaurant {
@@ -14,12 +14,18 @@ interface MenuItem {
     image_url: string | null; is_featured: boolean; is_spicy: boolean;
     is_vegetarian: boolean; category_name: string | null;
 }
+interface Promotion {
+    id: string; title: string; description: string | null;
+    discount_type: 'percentage' | 'fixed' | 'free_item' | 'points_multiplier' | null;
+    discount_value: number | null; valid_until: string | null;
+}
 
 export default function RestaurantPublicPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
     const [items, setItems] = useState<MenuItem[]>([]);
+    const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -42,6 +48,11 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
             })
             .catch(() => setError(true))
             .finally(() => setLoading(false));
+
+        fetch(`/api/promotions?slug=${slug}`)
+            .then(r => r.ok ? r.json() : { promotions: [] })
+            .then(data => setPromotions(data.promotions || []))
+            .catch(() => {});
     }, [slug]);
 
     if (loading) return <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center"><Loader2 size={32} className="animate-spin text-emerald-500" /></div>;
@@ -117,6 +128,45 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
             </div>
 
             <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+                {/* Promociones activas */}
+                {promotions.length > 0 && (
+                    <div>
+                        <h2 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+                            <Tag size={16} className="text-amber-400" /> Promociones
+                        </h2>
+                        <div className="space-y-2">
+                            {promotions.map(p => (
+                                <div key={p.id} className="bg-gradient-to-br from-amber-500/10 to-red-500/5 border border-amber-500/20 rounded-2xl p-3 flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center shrink-0">
+                                        <Tag size={16} className="text-amber-400" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-white text-sm">{p.title}</p>
+                                        {p.description && <p className="text-[11px] text-slate-400 mt-0.5">{p.description}</p>}
+                                        <div className="flex items-center gap-2 mt-1.5 flex-wrap text-[10px]">
+                                            {p.discount_type === 'percentage' && p.discount_value != null && (
+                                                <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">-{p.discount_value}%</span>
+                                            )}
+                                            {p.discount_type === 'fixed' && p.discount_value != null && (
+                                                <span className="bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">-S/{p.discount_value}</span>
+                                            )}
+                                            {p.discount_type === 'free_item' && (
+                                                <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold">Item gratis</span>
+                                            )}
+                                            {p.discount_type === 'points_multiplier' && p.discount_value != null && (
+                                                <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold">x{p.discount_value} puntos</span>
+                                            )}
+                                            {p.valid_until && (
+                                                <span className="text-slate-500">Hasta {new Date(p.valid_until).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Featured */}
                 {featured.length > 0 && !search && !activeCategory && (
                     <div>
