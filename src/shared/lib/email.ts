@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 // Remitente configurable. Para envíos reales, el dominio debe estar verificado
 // en Resend. `onboarding@resend.dev` solo entrega al correo de la cuenta (test).
-const FROM = process.env.RESEND_FROM || 'MyVipers <onboarding@resend.dev>';
+const FROM = process.env.RESEND_FROM || 'MyVipers <no-reply@myvipers.es>';
 
 interface ResetEmailOpts {
     to: string;
