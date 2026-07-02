@@ -102,6 +102,7 @@ export const pt: Translations = {
         login: 'Entrar',
         noAccount: 'Não tem conta?',
         registerFree: 'Cadastre-se grátis',
+        forgotPassword: 'Esqueceu sua senha?',
         joinVip: 'Entre no Clube VIP',
         registerSubtitle: 'Acumule pontos, ganhe prêmios',
         namePlaceholder: 'Seu nome completo',

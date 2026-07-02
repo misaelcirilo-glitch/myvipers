@@ -51,6 +51,9 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
                         <input type="password" required value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
                             placeholder="Tu contraseña" className="w-full px-4 py-3 bg-[#1a1a2e] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm" />
                     </div>
+                    <div className="text-right">
+                        <Link href={`/recuperar?r=${slug}`} className="text-slate-500 text-xs hover:text-emerald-400 transition">¿Olvidaste tu contraseña?</Link>
+                    </div>
                     <button type="submit" disabled={loading}
                         className="w-full py-3 bg-emerald-500 text-white font-bold text-sm rounded-xl hover:bg-emerald-600 disabled:opacity-50 transition-colors">
                         {loading ? 'Entrando...' : 'Entrar'}

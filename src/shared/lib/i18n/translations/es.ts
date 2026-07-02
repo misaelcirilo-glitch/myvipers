@@ -111,6 +111,7 @@ export const es = {
         login: 'Iniciar sesión',
         noAccount: '¿No tienes cuenta?',
         registerFree: 'Regístrate gratis',
+        forgotPassword: '¿Olvidaste tu contraseña?',
         joinVip: 'Únete al Club VIP',
         registerSubtitle: 'Acumula puntos, gana premios',
         namePlaceholder: 'Tu nombre completo',

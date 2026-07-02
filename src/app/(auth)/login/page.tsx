@@ -61,6 +61,10 @@ export default function LoginPage() {
 
                     {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
+                    <div className="text-right -mt-1">
+                        <Link href="/recuperar" className="text-slate-400 text-xs hover:text-amber-400 transition">{t.auth.forgotPassword}</Link>
+                    </div>
+
                     <button
                         type="submit" disabled={loading}
                         className="w-full py-4 bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-amber-500/20 hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"

@@ -30,6 +30,27 @@ export async function verifyToken(token: string): Promise<Session | null> {
     }
 }
 
+// --- Recuperación de contraseña ---
+// Token de reseteo firmado (sin tabla): incluye una huella del password_hash
+// actual, de modo que al cambiar la contraseña el token deja de ser válido
+// (single-use). Expira en 1 hora.
+export async function createResetToken(userId: string, passwordHash: string): Promise<string> {
+    return new SignJWT({ userId, type: 'pwreset', fp: passwordHash.slice(-12) })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setExpirationTime('1h')
+        .sign(JWT_SECRET);
+}
+
+export async function verifyResetToken(token: string): Promise<{ userId: string; fp: string } | null> {
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        if ((payload as any).type !== 'pwreset' || !payload.userId) return null;
+        return { userId: payload.userId as string, fp: (payload as any).fp as string };
+    } catch {
+        return null;
+    }
+}
+
 export async function getSession(): Promise<Session | null> {
     const cookieStore = await cookies();
     const token = cookieStore.get('token')?.value;
