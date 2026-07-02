@@ -39,7 +39,11 @@ export function useI18nProvider(baseCurrency?: string) {
     }, []);
 
     const formatPrice = useCallback((price: number) => {
-        return `${currencyConfig.symbol}${price.toFixed(2)}`;
+        // La API devuelve montos numéricos como string (driver Postgres/Neon),
+        // así que coercionamos antes de formatear para evitar `toFixed is not a
+        // function`. NaN → 0 por seguridad.
+        const n = Number(price);
+        return `${currencyConfig.symbol}${(Number.isFinite(n) ? n : 0).toFixed(2)}`;
     }, [currencyConfig]);
 
     const dateLocales: Record<Locale, string> = { es: 'es-PE', en: 'en-US', pt: 'pt-BR' };
