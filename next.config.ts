@@ -8,13 +8,18 @@ const nextConfig: NextConfig = {
     // lanzamiento en muchos dispositivos (pantalla en blanco). Con rewrite, "/"
     // responde 200 y la app abre bien. En myvipers.es (otro host) no aplica y la
     // raíz sigue mostrando la landing de la plataforma.
-    return [
-      {
-        source: "/",
-        has: [{ type: "host", value: "el-machay.vercel.app" }],
-        destination: "/r/el-machay",
-      },
-    ];
+    // beforeFiles: el rewrite corre ANTES de las rutas del filesystem, así que
+    // gana sobre la página landing de "/". (afterFiles solo aplicaría si "/" no
+    // existiera como página, y sí existe.)
+    return {
+      beforeFiles: [
+        {
+          source: "/",
+          has: [{ type: "host", value: "el-machay.vercel.app" }],
+          destination: "/r/el-machay",
+        },
+      ],
+    };
   },
   async headers() {
     // El service worker y el manifest NUNCA deben cachearse por el CDN de Vercel
