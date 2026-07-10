@@ -157,7 +157,7 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
                                                 <span className="bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-bold">x{p.discount_value} puntos</span>
                                             )}
                                             {p.valid_until && (
-                                                <span className="text-slate-500">Hasta {new Date(p.valid_until).toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
+                                                <span className="text-slate-500">Hasta {new Date(String(p.valid_until).slice(0, 10) + 'T00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
                                             )}
                                         </div>
                                     </div>

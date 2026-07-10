@@ -4,7 +4,8 @@ import { useSession } from '@/shared/lib/useSession';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
-import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell } from 'lucide-react';
+import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt } from 'lucide-react';
+import { BoletasTab } from '@/features/admin/BoletasTab';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -18,8 +19,9 @@ export default function AdminPage() {
     const [assigning, setAssigning] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [dashboard, setDashboard] = useState<any>(null);
-    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta' | 'clientes' | 'rewards' | 'config' | 'finance'>('reservations');
+    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta' | 'clientes' | 'rewards' | 'config' | 'finance' | 'boletas'>('reservations');
     const [financeData, setFinanceData] = useState<any>(null);
+    const [financePeriod, setFinancePeriod] = useState<'dia' | 'semana' | 'mes' | 'anio'>('mes');
     const [showFinanceForm, setShowFinanceForm] = useState(false);
     const [financeForm, setFinanceForm] = useState({ type: 'income', amount: '', description: '', category: 'general', date: '' });
     const [financeLoading, setFinanceLoading] = useState(false);
@@ -68,7 +70,7 @@ export default function AdminPage() {
         if (tab === 'finance') {
             loadFinance();
         }
-    }, [tab, promoLoading, rewardLoading, financeLoading]);
+    }, [tab, promoLoading, rewardLoading, financeLoading, financePeriod]);
 
     useEffect(() => {
         fetch('/api/admin/restaurant-info').then(r => r.json()).then(setRestaurantInfo).catch(() => {});
@@ -283,7 +285,7 @@ export default function AdminPage() {
     };
 
     const loadFinance = async () => {
-        const res = await fetch('/api/admin/finance').then(r => r.json());
+        const res = await fetch(`/api/admin/finance?period=${financePeriod}`).then(r => r.json());
         setFinanceData(res);
     };
 
@@ -505,6 +507,7 @@ export default function AdminPage() {
                     { id: 'rewards', label: 'Premios', icon: Award },
                     { id: 'redemptions', label: 'Canjes', icon: Gift },
                     { id: 'finance', label: 'Finanzas', icon: Wallet },
+                    { id: 'boletas', label: 'Boletas', icon: Receipt },
                     { id: 'config', label: 'Config', icon: Image },
                     { id: 'points', label: 'Actividad', icon: TrendingUp },
                 ].map(t => (
@@ -1077,34 +1080,40 @@ export default function AdminPage() {
             {/* Finance Tab */}
             {tab === 'finance' && (
                 <div className="space-y-4">
-                    {/* Summary cards */}
+                    {/* Period selector */}
+                    <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e]">
+                        {([
+                            { id: 'dia', label: 'Día' },
+                            { id: 'semana', label: 'Semana' },
+                            { id: 'mes', label: 'Mes' },
+                            { id: 'anio', label: 'Año' },
+                        ] as const).map(p => (
+                            <button
+                                key={p.id}
+                                onClick={() => setFinancePeriod(p.id)}
+                                className={`flex-1 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${financePeriod === p.id ? 'bg-amber-500 text-white' : 'text-slate-400'}`}
+                            >
+                                {p.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Summary cards (periodo seleccionado) */}
                     <div className="grid grid-cols-3 gap-3">
                         <div className="bg-[#1a1a2e] border border-green-500/20 rounded-2xl p-4 text-center">
                             <ArrowUpCircle size={18} className="text-green-400 mx-auto mb-1" />
-                            <p className="text-lg font-black text-green-400">S/{Number(financeData?.today?.today_income || 0).toFixed(2)}</p>
-                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Ingresos hoy</p>
+                            <p className="text-lg font-black text-green-400">S/{Number(financeData?.summary?.income || 0).toFixed(2)}</p>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Ingresos</p>
                         </div>
                         <div className="bg-[#1a1a2e] border border-red-500/20 rounded-2xl p-4 text-center">
                             <ArrowDownCircle size={18} className="text-red-400 mx-auto mb-1" />
-                            <p className="text-lg font-black text-red-400">S/{Number(financeData?.today?.today_expense || 0).toFixed(2)}</p>
-                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Egresos hoy</p>
+                            <p className="text-lg font-black text-red-400">S/{Number(financeData?.summary?.expense || 0).toFixed(2)}</p>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Egresos</p>
                         </div>
                         <div className="bg-[#1a1a2e] border border-amber-500/20 rounded-2xl p-4 text-center">
                             <Wallet size={18} className="text-amber-400 mx-auto mb-1" />
-                            <p className="text-lg font-black text-amber-400">S/{(Number(financeData?.month?.total_income || 0) - Number(financeData?.month?.total_expense || 0)).toFixed(2)}</p>
-                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Balance mes</p>
-                        </div>
-                    </div>
-
-                    {/* Month totals */}
-                    <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-4">
-                        <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-400">Ingresos del mes</span>
-                            <span className="font-black text-green-400">S/{Number(financeData?.month?.total_income || 0).toFixed(2)}</span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs mt-2">
-                            <span className="text-slate-400">Egresos del mes</span>
-                            <span className="font-black text-red-400">S/{Number(financeData?.month?.total_expense || 0).toFixed(2)}</span>
+                            <p className="text-lg font-black text-amber-400">S/{Number(financeData?.summary?.balance || 0).toFixed(2)}</p>
+                            <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Balance</p>
                         </div>
                     </div>
 
@@ -1191,7 +1200,7 @@ export default function AdminPage() {
                                     <div className="flex items-center gap-2 text-[10px] text-slate-500">
                                         <span className="capitalize">{tx.category}</span>
                                         <span>·</span>
-                                        <span>{new Date(tx.date + 'T00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
+                                        <span>{new Date(String(tx.date).slice(0, 10) + 'T00:00').toLocaleDateString('es-PE', { day: 'numeric', month: 'short' })}</span>
                                     </div>
                                 </div>
                             </div>
@@ -1206,6 +1215,11 @@ export default function AdminPage() {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {/* Boletas Tab */}
+            {tab === 'boletas' && (
+                <BoletasTab restaurantInfo={restaurantInfo} />
             )}
 
             {/* Config Tab - Logo */}

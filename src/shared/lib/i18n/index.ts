@@ -49,7 +49,7 @@ export function useI18nProvider(baseCurrency?: string) {
     const dateLocales: Record<Locale, string> = { es: 'es-PE', en: 'en-US', pt: 'pt-BR' };
 
     const formatDate = useCallback((date: string) => {
-        return new Date(date + 'T00:00').toLocaleDateString(dateLocales[locale], {
+        return new Date(String(date).slice(0, 10) + 'T00:00').toLocaleDateString(dateLocales[locale], {
             weekday: 'short', day: 'numeric', month: 'short',
         });
     }, [locale]);
