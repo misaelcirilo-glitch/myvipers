@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
+import { useRestaurant } from '@/shared/lib/useRestaurant';
+import { hasModule } from '@/shared/lib/tenant';
 import { Flame, Star, Search, Leaf, WheatOff, CircleAlert } from 'lucide-react';
 
 interface MenuItem {
@@ -27,10 +30,20 @@ interface MenuCategory {
 export default function CartaPage() {
     const { user } = useSession();
     const { t, formatPrice } = useI18n();
+    const { enabledModules, loading: configLoading } = useRestaurant();
+    const router = useRouter();
     const [menu, setMenu] = useState<MenuCategory[]>([]);
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Gating multivertical: la carta solo existe si el módulo 'restaurant' está
+    // activo. El Machay lo tiene → sin redirección, comportamiento idéntico.
+    useEffect(() => {
+        if (!configLoading && !hasModule(enabledModules, 'restaurant')) {
+            router.replace('/puntos');
+        }
+    }, [configLoading, enabledModules, router]);
 
     useEffect(() => {
         fetch('/api/menu').then(r => r.json()).then(data => {

@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { CalendarDays, Clock, Users, MessageSquare, Check, AlertCircle } from 'lucide-react';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant, generateTimeSlots } from '@/shared/lib/useRestaurant';
+import { hasModule } from '@/shared/lib/tenant';
 
 interface Reservation {
     id: string;
@@ -17,7 +19,8 @@ interface Reservation {
 
 export default function ReservarPage() {
     const { t, formatDate } = useI18n();
-    const { hours } = useRestaurant();
+    const { hours, enabledModules, loading: configLoading } = useRestaurant();
+    const router = useRouter();
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [partySize, setPartySize] = useState(2);
@@ -30,6 +33,14 @@ export default function ReservarPage() {
     const today = new Date().toISOString().split('T')[0];
     const timeSlotGroups = generateTimeSlots(hours.time_slots);
     const partySizes = Array.from({ length: hours.max_party_size }, (_, i) => i + 1);
+
+    // Gating multivertical: las reservas solo existen si el módulo 'restaurant'
+    // está activo. El Machay lo tiene → sin redirección, idéntico.
+    useEffect(() => {
+        if (!configLoading && !hasModule(enabledModules, 'restaurant')) {
+            router.replace('/puntos');
+        }
+    }, [configLoading, enabledModules, router]);
 
     useEffect(() => {
         fetch('/api/reservations').then(r => r.json()).then(data => {

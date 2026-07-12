@@ -47,6 +47,8 @@ export interface RestaurantContextValue {
     restaurant: RestaurantConfig;
     hours: HoursConfig;
     vipLevels: VipLevel[];
+    /** Módulos habilitados del tenant (multivertical). Default: ['restaurant']. */
+    enabledModules: string[];
     loading: boolean;
 }
 
@@ -87,10 +89,16 @@ const DEFAULT_VIP: VipLevel[] = [
     { key: 'inca', min_points: 5000, icon: '👑', color: 'from-red-500 to-amber-500' },
 ];
 
+// Default retrocompatible: si aún no cargó la config, se asume el módulo
+// 'restaurant' activo → El Machay (y cualquier restaurante) se ve idéntico y
+// sin parpadeos de gating durante la carga.
+const DEFAULT_MODULES = ['restaurant'];
+
 export const RestaurantContext = createContext<RestaurantContextValue>({
     restaurant: DEFAULT_RESTAURANT,
     hours: DEFAULT_HOURS,
     vipLevels: DEFAULT_VIP,
+    enabledModules: DEFAULT_MODULES,
     loading: true,
 });
 
@@ -98,6 +106,7 @@ export function useRestaurantProvider(): RestaurantContextValue {
     const [restaurant, setRestaurant] = useState<RestaurantConfig>(DEFAULT_RESTAURANT);
     const [hours, setHours] = useState<HoursConfig>(DEFAULT_HOURS);
     const [vipLevels, setVipLevels] = useState<VipLevel[]>(DEFAULT_VIP);
+    const [enabledModules, setEnabledModules] = useState<string[]>(DEFAULT_MODULES);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -108,12 +117,13 @@ export function useRestaurantProvider(): RestaurantContextValue {
                 if (cfg?.restaurant) setRestaurant({ ...DEFAULT_RESTAURANT, ...cfg.restaurant });
                 if (cfg?.hours) setHours({ ...DEFAULT_HOURS, ...cfg.hours });
                 if (cfg?.vip_levels?.levels) setVipLevels(cfg.vip_levels.levels);
+                if (Array.isArray(data.enabledModules)) setEnabledModules(data.enabledModules);
             })
             .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
-    return { restaurant, hours, vipLevels, loading };
+    return { restaurant, hours, vipLevels, enabledModules, loading };
 }
 
 export function useRestaurant() {

@@ -1,17 +1,32 @@
 import { db } from '@/shared/lib/db';
 import { NextResponse } from 'next/server';
+import { getSession } from '@/shared/lib/auth';
+import { getTenantConfig } from '@/shared/lib/tenant';
 
 export async function GET() {
+    // Módulos habilitados del tenant (multivertical, Fase 2). Retrocompatible:
+    // sin sesión o sin fila devuelve ['restaurant'] → El Machay no cambia nada.
+    let enabledModules: string[] = ['restaurant'];
+    try {
+        const session = await getSession();
+        if (session?.restaurantId) {
+            enabledModules = (await getTenantConfig(session.restaurantId)).enabledModules;
+        }
+    } catch {
+        enabledModules = ['restaurant'];
+    }
+
     try {
         const rows = await db`SELECT key, value FROM config`;
         const config: Record<string, any> = {};
         for (const row of rows) {
             config[row.key] = row.value;
         }
-        return NextResponse.json({ config });
+        return NextResponse.json({ config, enabledModules });
     } catch {
         // Fallback defaults if DB not available
         return NextResponse.json({
+            enabledModules,
             config: {
                 restaurant: {
                     name: 'Mi Restaurante',

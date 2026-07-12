@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/shared/lib/useSession';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
+import { hasModule } from '@/shared/lib/tenant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
 import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt } from 'lucide-react';
@@ -9,8 +10,9 @@ import { BoletasTab } from '@/features/admin/BoletasTab';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
-    const { restaurant } = useRestaurant();
+    const { restaurant, enabledModules } = useRestaurant();
     const router = useRouter();
+    const hasRestaurant = hasModule(enabledModules, 'restaurant');
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
@@ -75,6 +77,15 @@ export default function AdminPage() {
     useEffect(() => {
         fetch('/api/admin/restaurant-info').then(r => r.json()).then(setRestaurantInfo).catch(() => {});
     }, []);
+
+    // Si el tenant no tiene el módulo 'restaurant', el tab por defecto
+    // ('reservations') queda oculto → cae en 'clientes' (core). Para El Machay
+    // el módulo está activo, así que este efecto no hace nada.
+    useEffect(() => {
+        if (!hasRestaurant && (tab === 'reservations' || tab === 'carta')) {
+            setTab('clientes');
+        }
+    }, [hasRestaurant, tab]);
 
     const loadMenu = async () => {
         const res = await fetch('/api/admin/menu').then(r => r.json());
@@ -497,20 +508,22 @@ export default function AdminPage() {
                 )}
             </div>
 
-            {/* Tabs */}
+            {/* Tabs. `module` no nulo = tab específico de una vertical; se oculta
+                si el tenant no tiene ese módulo. Reservas y Carta dependen de
+                'restaurant' → El Machay los tiene y ve idéntico. */}
             <div className="flex bg-[#1a1a2e] rounded-xl p-1 border border-[#2a2a3e] overflow-x-auto">
-                {[
-                    { id: 'reservations', label: 'Reservas', icon: CalendarDays },
-                    { id: 'clientes', label: 'Clientes', icon: Users },
-                    { id: 'carta', label: 'Carta', icon: UtensilsCrossed },
-                    { id: 'promos', label: 'Promos', icon: Megaphone },
-                    { id: 'rewards', label: 'Premios', icon: Award },
-                    { id: 'redemptions', label: 'Canjes', icon: Gift },
-                    { id: 'finance', label: 'Finanzas', icon: Wallet },
-                    { id: 'boletas', label: 'Boletas', icon: Receipt },
-                    { id: 'config', label: 'Config', icon: Image },
-                    { id: 'points', label: 'Actividad', icon: TrendingUp },
-                ].map(t => (
+                {([
+                    { id: 'reservations', label: 'Reservas', icon: CalendarDays, module: 'restaurant' },
+                    { id: 'clientes', label: 'Clientes', icon: Users, module: null },
+                    { id: 'carta', label: 'Carta', icon: UtensilsCrossed, module: 'restaurant' },
+                    { id: 'promos', label: 'Promos', icon: Megaphone, module: null },
+                    { id: 'rewards', label: 'Premios', icon: Award, module: null },
+                    { id: 'redemptions', label: 'Canjes', icon: Gift, module: null },
+                    { id: 'finance', label: 'Finanzas', icon: Wallet, module: null },
+                    { id: 'boletas', label: 'Boletas', icon: Receipt, module: null },
+                    { id: 'config', label: 'Config', icon: Image, module: null },
+                    { id: 'points', label: 'Actividad', icon: TrendingUp, module: null },
+                ] as const).filter(t => !t.module || hasModule(enabledModules, t.module)).map(t => (
                     <button
                         key={t.id}
                         onClick={() => setTab(t.id as any)}
