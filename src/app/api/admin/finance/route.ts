@@ -18,7 +18,7 @@ export async function GET(req: Request) {
     const transactions = await db`
         SELECT id, type, amount, description, category, date, created_at
         FROM finance_transactions
-        WHERE (
+        WHERE restaurant_id = ${session.restaurantId} AND (
             (${period} = 'dia'    AND date = CURRENT_DATE) OR
             (${period} = 'semana' AND date >= date_trunc('week', CURRENT_DATE)) OR
             (${period} = 'mes'    AND date >= date_trunc('month', CURRENT_DATE)) OR
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
             COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as income,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as expense
         FROM finance_transactions
-        WHERE (
+        WHERE restaurant_id = ${session.restaurantId} AND (
             (${period} = 'dia'    AND date = CURRENT_DATE) OR
             (${period} = 'semana' AND date >= date_trunc('week', CURRENT_DATE)) OR
             (${period} = 'mes'    AND date >= date_trunc('month', CURRENT_DATE)) OR
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
             COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as total_income,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as total_expense
         FROM finance_transactions
-        WHERE date >= date_trunc('month', CURRENT_DATE)
+        WHERE restaurant_id = ${session.restaurantId} AND date >= date_trunc('month', CURRENT_DATE)
     `;
 
     const todayRows = await db`
@@ -59,7 +59,7 @@ export async function GET(req: Request) {
             COALESCE(SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END), 0) as today_income,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END), 0) as today_expense
         FROM finance_transactions
-        WHERE date = CURRENT_DATE
+        WHERE restaurant_id = ${session.restaurantId} AND date = CURRENT_DATE
     `;
 
     return NextResponse.json({
@@ -85,8 +85,8 @@ export async function POST(req: Request) {
     }
 
     const tx = await db`
-        INSERT INTO finance_transactions (type, amount, description, category, date)
-        VALUES (${type}, ${amount}, ${description}, ${category || 'general'}, ${date || new Date().toISOString().split('T')[0]})
+        INSERT INTO finance_transactions (restaurant_id, type, amount, description, category, date)
+        VALUES (${session.restaurantId}, ${type}, ${amount}, ${description}, ${category || 'general'}, ${date || new Date().toISOString().split('T')[0]})
         RETURNING id, type, amount, description, category, date
     `;
 
@@ -100,6 +100,6 @@ export async function DELETE(req: Request) {
     }
 
     const { id } = await req.json();
-    await db`DELETE FROM finance_transactions WHERE id = ${id}`;
+    await db`DELETE FROM finance_transactions WHERE id = ${id} AND restaurant_id = ${session.restaurantId}`;
     return NextResponse.json({ ok: true });
 }

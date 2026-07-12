@@ -24,6 +24,7 @@ export async function GET() {
     const boletas = await db`
         SELECT id, serie, correlativo, numero, fecha, cliente_nombre, cliente_doc, items, subtotal, total, created_at
         FROM boletas
+        WHERE restaurant_id = ${session.restaurantId}
         ORDER BY created_at DESC
         LIMIT 100
     `;
@@ -49,10 +50,13 @@ export async function POST(req: Request) {
     const total = subtotal;
     const itemsJson = JSON.stringify(items);
 
-    // Correlativo atómico vía secuencia; número formateado B001-00000001.
+    // Correlativo per-tenant: cada restaurante lleva su propia numeración.
+    // Atómico dentro del INSERT (MAX(correlativo)+1 filtrado por tenant);
+    // número formateado B001-00000001.
     const rows = await db`
-        INSERT INTO boletas (serie, correlativo, numero, fecha, cliente_nombre, cliente_doc, items, subtotal, total)
+        INSERT INTO boletas (restaurant_id, serie, correlativo, numero, fecha, cliente_nombre, cliente_doc, items, subtotal, total)
         SELECT
+            ${session.restaurantId},
             'B001',
             c.correlativo,
             'B001-' || LPAD(c.correlativo::text, 8, '0'),
@@ -62,7 +66,11 @@ export async function POST(req: Request) {
             ${itemsJson}::jsonb,
             ${subtotal},
             ${total}
-        FROM (SELECT nextval('boletas_correlativo_seq') AS correlativo) c
+        FROM (
+            SELECT COALESCE(MAX(correlativo), 0) + 1 AS correlativo
+            FROM boletas
+            WHERE restaurant_id = ${session.restaurantId}
+        ) c
         RETURNING id, serie, correlativo, numero, fecha, cliente_nombre, cliente_doc, items, subtotal, total, created_at
     `;
 
