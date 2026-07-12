@@ -5,8 +5,9 @@ import { useRestaurant } from '@/shared/lib/useRestaurant';
 import { hasModule } from '@/shared/lib/tenant';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
-import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt } from 'lucide-react';
+import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt, Package } from 'lucide-react';
 import { BoletasTab } from '@/features/admin/BoletasTab';
+import { RetailTab } from '@/features/admin/RetailTab';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -21,7 +22,7 @@ export default function AdminPage() {
     const [assigning, setAssigning] = useState(false);
     const [result, setResult] = useState<any>(null);
     const [dashboard, setDashboard] = useState<any>(null);
-    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta' | 'clientes' | 'rewards' | 'config' | 'finance' | 'boletas'>('reservations');
+    const [tab, setTab] = useState<'points' | 'reservations' | 'redemptions' | 'promos' | 'carta' | 'clientes' | 'rewards' | 'config' | 'finance' | 'boletas' | 'retail'>('reservations');
     const [financeData, setFinanceData] = useState<any>(null);
     const [financePeriod, setFinancePeriod] = useState<'dia' | 'semana' | 'mes' | 'anio'>('mes');
     const [showFinanceForm, setShowFinanceForm] = useState(false);
@@ -516,6 +517,7 @@ export default function AdminPage() {
                     { id: 'reservations', label: 'Reservas', icon: CalendarDays, module: 'restaurant' },
                     { id: 'clientes', label: 'Clientes', icon: Users, module: null },
                     { id: 'carta', label: 'Carta', icon: UtensilsCrossed, module: 'restaurant' },
+                    { id: 'retail', label: 'Productos', icon: Package, module: 'retail' },
                     { id: 'promos', label: 'Promos', icon: Megaphone, module: null },
                     { id: 'rewards', label: 'Premios', icon: Award, module: null },
                     { id: 'redemptions', label: 'Canjes', icon: Gift, module: null },
@@ -1234,6 +1236,9 @@ export default function AdminPage() {
             {tab === 'boletas' && (
                 <BoletasTab restaurantInfo={restaurantInfo} />
             )}
+
+            {/* Retail Tab (solo tenants con módulo 'retail') */}
+            {tab === 'retail' && <RetailTab />}
 
             {/* Config Tab - Logo */}
             {tab === 'config' && (
