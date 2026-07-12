@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
+import { getTenantConfig } from '@/shared/lib/tenant';
 
 const schema = z.object({
     phone: z.string().optional(),
@@ -57,7 +58,11 @@ export async function POST(req: Request) {
             END
             WHERE id = ${user.id}`;
 
-        const desc = `Consumo S/${amount.toFixed(2)}`;
+        // Copy vertical-aware: restaurante = "Consumo" (exacto, El Machay idéntico);
+        // retail = "Compra". Aparece en el historial de puntos del cliente.
+        const { businessType } = await getTenantConfig(session.restaurantId);
+        const concept = businessType === 'retail' ? 'Compra' : 'Consumo';
+        const desc = `${concept} S/${amount.toFixed(2)}`;
         await db`INSERT INTO point_transactions (user_id, restaurant_id, type, points, description, reference_amount, performed_by)
             VALUES (${user.id}, ${session.restaurantId}, 'earn', ${pointsToAdd}, ${desc}, ${amount}, ${session.userId})`;
 

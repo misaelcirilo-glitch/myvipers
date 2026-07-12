@@ -11,7 +11,7 @@ import { RetailTab } from '@/features/admin/RetailTab';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
-    const { restaurant, enabledModules } = useRestaurant();
+    const { restaurant, enabledModules, businessType } = useRestaurant();
     const router = useRouter();
     const hasRestaurant = hasModule(enabledModules, 'restaurant');
     const [searchQuery, setSearchQuery] = useState('');
@@ -482,7 +482,7 @@ export default function AdminPage() {
                     <div className="relative">
                         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-bold">S/</span>
                         <input
-                            type="number" step="0.01" placeholder="Importe consumido" required min="1"
+                            type="number" step="0.01" placeholder={businessType === 'retail' ? 'Importe de compra' : 'Importe consumido'} required min="1"
                             className="w-full pl-10 pr-4 py-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition text-sm"
                             value={amount} onChange={e => setAmount(e.target.value)}
                         />

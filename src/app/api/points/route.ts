@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
+import { getTenantConfig } from '@/shared/lib/tenant';
 import { z } from 'zod';
 
 // GET: history + rewards
@@ -48,7 +49,14 @@ export async function POST(req: Request) {
         // Create redemption
         await db`INSERT INTO redemptions (user_id, reward_id, points_spent, restaurant_id) VALUES (${session.userId}, ${rewardId}, ${reward[0].points_cost}, ${session.restaurantId})`;
 
-        return NextResponse.json({ success: true, message: `¡Canjeaste "${reward[0].name}"! Muestra esto al mesero.` });
+        // Copy vertical-aware: el restaurante conserva su wording exacto ("al mesero");
+        // el retail recibe uno apropiado (mostrar en caja). Default 'restaurant'.
+        const { businessType } = await getTenantConfig(session.restaurantId);
+        const message = businessType === 'retail'
+            ? `¡Canjeaste "${reward[0].name}"! Muéstralo en caja para usarlo.`
+            : `¡Canjeaste "${reward[0].name}"! Muestra esto al mesero.`;
+
+        return NextResponse.json({ success: true, message });
     } catch (error: any) {
         console.error('Redeem error:', error);
         return NextResponse.json({ error: 'Error al canjear' }, { status: 500 });

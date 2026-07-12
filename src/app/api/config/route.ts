@@ -7,13 +7,17 @@ export async function GET() {
     // Módulos habilitados del tenant (multivertical, Fase 2). Retrocompatible:
     // sin sesión o sin fila devuelve ['restaurant'] → El Machay no cambia nada.
     let enabledModules: string[] = ['restaurant'];
+    let businessType = 'restaurant';
     try {
         const session = await getSession();
         if (session?.restaurantId) {
-            enabledModules = (await getTenantConfig(session.restaurantId)).enabledModules;
+            const tenant = await getTenantConfig(session.restaurantId);
+            enabledModules = tenant.enabledModules;
+            businessType = tenant.businessType;
         }
     } catch {
         enabledModules = ['restaurant'];
+        businessType = 'restaurant';
     }
 
     try {
@@ -22,11 +26,12 @@ export async function GET() {
         for (const row of rows) {
             config[row.key] = row.value;
         }
-        return NextResponse.json({ config, enabledModules });
+        return NextResponse.json({ config, enabledModules, businessType });
     } catch {
         // Fallback defaults if DB not available
         return NextResponse.json({
             enabledModules,
+            businessType,
             config: {
                 restaurant: {
                     name: 'Mi Restaurante',

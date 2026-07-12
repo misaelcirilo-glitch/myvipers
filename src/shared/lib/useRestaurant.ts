@@ -49,6 +49,8 @@ export interface RestaurantContextValue {
     vipLevels: VipLevel[];
     /** Módulos habilitados del tenant (multivertical). Default: ['restaurant']. */
     enabledModules: string[];
+    /** Vertical del tenant ('restaurant' | 'retail'). Default: 'restaurant'. */
+    businessType: string;
     loading: boolean;
 }
 
@@ -99,6 +101,7 @@ export const RestaurantContext = createContext<RestaurantContextValue>({
     hours: DEFAULT_HOURS,
     vipLevels: DEFAULT_VIP,
     enabledModules: DEFAULT_MODULES,
+    businessType: 'restaurant',
     loading: true,
 });
 
@@ -107,6 +110,7 @@ export function useRestaurantProvider(): RestaurantContextValue {
     const [hours, setHours] = useState<HoursConfig>(DEFAULT_HOURS);
     const [vipLevels, setVipLevels] = useState<VipLevel[]>(DEFAULT_VIP);
     const [enabledModules, setEnabledModules] = useState<string[]>(DEFAULT_MODULES);
+    const [businessType, setBusinessType] = useState<string>('restaurant');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -118,12 +122,13 @@ export function useRestaurantProvider(): RestaurantContextValue {
                 if (cfg?.hours) setHours({ ...DEFAULT_HOURS, ...cfg.hours });
                 if (cfg?.vip_levels?.levels) setVipLevels(cfg.vip_levels.levels);
                 if (Array.isArray(data.enabledModules)) setEnabledModules(data.enabledModules);
+                if (typeof data.businessType === 'string') setBusinessType(data.businessType);
             })
             .catch(() => {})
             .finally(() => setLoading(false));
     }, []);
 
-    return { restaurant, hours, vipLevels, enabledModules, loading };
+    return { restaurant, hours, vipLevels, enabledModules, businessType, loading };
 }
 
 export function useRestaurant() {
