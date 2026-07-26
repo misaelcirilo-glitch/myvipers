@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Zap, Gift } from 'lucide-react';
 
 export default function RestaurantRegistroPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
-    const router = useRouter();
     const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', referralCode: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -23,7 +21,9 @@ export default function RestaurantRegistroPage({ params }: { params: Promise<{ s
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            router.push('/carta');
+            // Navegación dura: el SessionProvider (layout raíz) solo lee la cookie
+            // al montar; con router.push /carta rebotaría al login.
+            window.location.href = '/carta';
         } catch (err: any) {
             setError(err.message);
         } finally { setLoading(false); }

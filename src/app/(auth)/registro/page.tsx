@@ -1,12 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Flame, ArrowLeft, Gift } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/shared/lib/i18n';
 
 export default function RegisterPage() {
-    const router = useRouter();
     const { t } = useI18n();
     const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', referralCode: '' });
     const [error, setError] = useState('');
@@ -24,7 +22,9 @@ export default function RegisterPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            router.push('/carta');
+            // Navegación dura: el SessionProvider (layout raíz) solo lee la cookie
+            // al montar; con router.push /carta rebotaría al login.
+            window.location.href = '/carta';
         } catch (err: any) {
             setError(err.message);
         } finally {

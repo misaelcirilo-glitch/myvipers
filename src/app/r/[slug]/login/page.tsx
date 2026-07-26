@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, use } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Zap } from 'lucide-react';
 
 export default function RestaurantLoginPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
-    const router = useRouter();
     const [form, setForm] = useState({ phone: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -24,8 +22,10 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             // Admin/waiter entran directo a su panel; los clientes, a la carta.
+            // Navegación DURA (ver comentario en (auth)/login): con router.push el
+            // SessionProvider no se remonta y el destino rebota al login.
             const role = data.user?.role;
-            router.push(role === 'admin' || role === 'waiter' ? '/admin' : '/carta');
+            window.location.href = role === 'admin' || role === 'waiter' ? '/admin' : '/carta';
         } catch (err: any) {
             setError(err.message);
         } finally { setLoading(false); }

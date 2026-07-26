@@ -1,12 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Flame, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useI18n } from '@/shared/lib/i18n';
 
 export default function LoginPage() {
-    const router = useRouter();
     const { t } = useI18n();
     const [form, setForm] = useState({ phone: '', password: '' });
     const [error, setError] = useState('');
@@ -24,7 +22,11 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            router.push(data.user.role === 'admin' || data.user.role === 'waiter' ? '/admin' : '/carta');
+            // Navegación DURA, no router.push: el SessionProvider vive en el layout
+            // raíz y solo lee la cookie al montar, así que una navegación cliente
+            // llega con user=null y el guard de destino rebota otra vez al login.
+            const isStaff = data.user.role === 'admin' || data.user.role === 'waiter';
+            window.location.href = isStaff ? '/admin' : '/carta';
         } catch (err: any) {
             setError(err.message);
         } finally {

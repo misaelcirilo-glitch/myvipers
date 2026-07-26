@@ -1,11 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, ArrowLeft } from 'lucide-react';
 
 export default function CrearRestaurantePage() {
-    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [step, setStep] = useState(1);
@@ -31,7 +29,9 @@ export default function CrearRestaurantePage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            router.push('/admin');
+            // Navegación dura: el SessionProvider (layout raíz) solo lee la cookie
+            // al montar; con router.push /admin rebotaría al login.
+            window.location.href = '/admin';
         } catch (err: any) {
             setError(err.message || 'Error al crear');
         } finally {
