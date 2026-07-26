@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { CalendarDays, Clock, Users, MessageSquare, Check, AlertCircle } from 'lucide-react';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant, generateTimeSlots } from '@/shared/lib/useRestaurant';
-import { hasModule } from '@/shared/lib/tenant';
+import { hasModule } from '@/shared/lib/modules';
 
 interface Reservation {
     id: string;

@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
-import { hasModule } from '@/shared/lib/tenant';
+import { hasModule } from '@/shared/lib/modules';
 import { Flame, Star, Search, Leaf, WheatOff, CircleAlert } from 'lucide-react';
 
 interface MenuItem {

@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from '@/shared/lib/useSession';
 import { useI18n } from '@/shared/lib/i18n';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
-import { hasModule } from '@/shared/lib/tenant';
+import { hasModule } from '@/shared/lib/modules';
 import { UtensilsCrossed, CalendarDays, Star, User, Megaphone } from 'lucide-react';
 import Link from 'next/link';
 

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from '@/shared/lib/useSession';
 import { useRestaurant } from '@/shared/lib/useRestaurant';
-import { hasModule } from '@/shared/lib/tenant';
+import { hasModule } from '@/shared/lib/modules';
 import { LocaleSwitcher } from '@/shared/components/LocaleSwitcher';
 import { useRouter } from 'next/navigation';
 import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt, Package } from 'lucide-react';

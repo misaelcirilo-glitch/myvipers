@@ -42,10 +42,8 @@ export async function getTenantConfig(restaurantId: string): Promise<TenantConfi
     };
 }
 
-/** ¿El tenant tiene habilitado el módulo indicado? */
-export function hasModule(enabledModules: string[], module: string): boolean {
-    return enabledModules.includes(module);
-}
+// `hasModule` se movió a `./modules` (client-safe, sin importar la BD): los
+// componentes cliente lo importan desde allí para no arrastrar `neon()` al bundle.
 
 /**
  * Extrae el `restaurantId` de la sesión de forma consistente, para inyectarlo
