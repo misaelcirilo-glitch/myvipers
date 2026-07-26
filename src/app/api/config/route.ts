@@ -8,9 +8,11 @@ export async function GET() {
     // sin sesión o sin fila devuelve ['restaurant'] → El Machay no cambia nada.
     let enabledModules: string[] = ['restaurant'];
     let businessType = 'restaurant';
+    let restaurantId: string | null = null;
     try {
         const session = await getSession();
         if (session?.restaurantId) {
+            restaurantId = session.restaurantId;
             const tenant = await getTenantConfig(session.restaurantId);
             enabledModules = tenant.enabledModules;
             businessType = tenant.businessType;
@@ -21,7 +23,12 @@ export async function GET() {
     }
 
     try {
-        const rows = await db`SELECT key, value FROM config`;
+        // Multi-tenant: con sesión, la config es la del tenant del usuario (así la
+        // cuenta demo ve su propia config y no la de otro restaurante). Sin sesión
+        // (páginas públicas) se mantiene el comportamiento anterior.
+        const rows = restaurantId
+            ? await db`SELECT key, value FROM config WHERE restaurant_id = ${restaurantId}`
+            : await db`SELECT key, value FROM config`;
         const config: Record<string, any> = {};
         for (const row of rows) {
             config[row.key] = row.value;

@@ -1,12 +1,44 @@
+import { db } from '@/shared/lib/db';
+import { createToken, setSessionCookie } from '@/shared/lib/auth';
 import { NextResponse } from 'next/server';
+import { DEMO_PHONE } from '@/shared/lib/demo';
 
-// DESACTIVADO (2026-07-26) por seguridad.
-// Este endpoint concedía una sesión de ADMIN real sobre el tenant de PRODUCCIÓN
-// de El Machay (usuario con teléfono 944933545, rol admin) SIN contraseña: una
-// simple petición POST devolvía una cookie de sesión válida y permitía leer y
-// modificar datos reales de clientes (nombres, puntos, transacciones).
-// Se apaga (404) hasta reconstruir la demo sobre un tenant desechable aislado,
-// sin acceso a datos reales. No afecta al login normal (/api/auth/login).
+// Login de DEMO para vendedores. Entra como admin del tenant DEMO AISLADO
+// ("Restaurante Demo", datos ficticios) — NUNCA sobre un tenant real de cliente.
+// (Antes apuntaba a 944933545, el admin real de El Machay: fuga corregida.)
 export async function POST() {
-    return NextResponse.json({ error: 'Demo no disponible' }, { status: 404 });
+    try {
+        const rows = await db`
+            SELECT u.id, u.name, u.phone, u.role, u.vip_level, u.restaurant_id, r.slug
+            FROM users u
+            LEFT JOIN restaurants r ON r.id = u.restaurant_id
+            WHERE u.phone = ${DEMO_PHONE} AND u.role = 'admin'
+            LIMIT 1
+        `;
+
+        if (rows.length === 0) {
+            return NextResponse.json({ error: 'Demo no disponible' }, { status: 404 });
+        }
+
+        const user = rows[0];
+        const token = await createToken({
+            userId: user.id,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+            vipLevel: user.vip_level || 'bronce',
+            restaurantId: user.restaurant_id || '',
+            restaurantSlug: user.slug || '',
+        });
+
+        await setSessionCookie(token);
+
+        return NextResponse.json({
+            ok: true,
+            user: { id: user.id, name: user.name, role: user.role, isDemo: true },
+        });
+    } catch (e) {
+        console.error('Demo login error:', e);
+        return NextResponse.json({ error: 'Error iniciando demo' }, { status: 500 });
+    }
 }
