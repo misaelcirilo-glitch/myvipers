@@ -52,9 +52,11 @@ export default function AdminPage() {
     const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
 
     useEffect(() => {
-        if (!loading && user && user.role !== 'admin' && user.role !== 'waiter') {
-            router.replace('/carta');
-        }
+        if (loading) return;
+        // Sin sesión (deslogueado / sesión caducada) → al login, no pantalla en
+        // blanco. Con sesión pero sin rol de gestión → a la carta.
+        if (!user) { router.replace('/login'); return; }
+        if (user.role !== 'admin' && user.role !== 'waiter') router.replace('/carta');
     }, [user, loading, router]);
 
     useEffect(() => {
