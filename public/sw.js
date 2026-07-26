@@ -1,7 +1,7 @@
 // MyVipers Service Worker — Web Push
 // IMPORTANTE: incrementar SW_VERSION en cada release cambia el byte-diff del
 // script y fuerza al navegador a instalar este SW y purgar cualquier caché roto.
-const SW_VERSION = 'v2-2026-07-01';
+const SW_VERSION = 'v3-2026-07-26';
 const CACHE_NAME = `myvipers-${SW_VERSION}`;
 
 self.addEventListener('install', () => {
