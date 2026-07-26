@@ -23,7 +23,9 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            router.push('/carta');
+            // Admin/waiter entran directo a su panel; los clientes, a la carta.
+            const role = data.user?.role;
+            router.push(role === 'admin' || role === 'waiter' ? '/admin' : '/carta');
         } catch (err: any) {
             setError(err.message);
         } finally { setLoading(false); }
