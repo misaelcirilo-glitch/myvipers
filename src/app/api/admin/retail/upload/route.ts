@@ -5,8 +5,13 @@ import { NextResponse } from 'next/server';
 // Retail — subida de la foto principal del producto a Vercel Blob (PRP-myvipers-002,
 // Fase 4). Solo admin. El binario vive en Blob; en la BD solo se guarda la URL
 // (la escribe /admin/retail/products al guardar el producto). Aislado por tenant
-// vía el prefijo de ruta retail/<restaurant_id>/. El token BLOB_READ_WRITE_TOKEN
-// lo inyecta Vercel al conectar el store (nunca va en código).
+// vía el prefijo de ruta retail/<restaurant_id>/.
+//
+// STORE DEDICADO: el retail usa su propio store (myvipers-retail-fotos) vía la
+// variable RETAIL_BLOB_READ_WRITE_TOKEN — SEPARADA del BLOB_READ_WRITE_TOKEN que
+// El Machay usa para la carta. Se pasa explícita a put/del para no colisionar.
+// El token nunca va en código; lo inyecta Vercel al conectar el store.
+const RETAIL_BLOB_TOKEN = process.env.RETAIL_BLOB_READ_WRITE_TOKEN;
 
 const MAX_BYTES = 5 * 1024 * 1024;                 // 5 MB (el cliente ya recomprime antes)
 const ALLOWED = ['image/jpeg', 'image/png', 'image/webp'];
@@ -21,7 +26,7 @@ export async function POST(req: Request) {
     const session = await requireAdmin();
     if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    if (!RETAIL_BLOB_TOKEN) {
         return NextResponse.json({ error: 'Almacenamiento de imágenes no configurado' }, { status: 503 });
     }
 
@@ -45,6 +50,6 @@ export async function POST(req: Request) {
     // randomUUID en el path evita colisiones y hace la URL no adivinable.
     const key = `retail/${session.restaurantId}/${crypto.randomUUID()}.${ext}`;
 
-    const blob = await put(key, file, { access: 'public', contentType: file.type });
+    const blob = await put(key, file, { access: 'public', contentType: file.type, token: RETAIL_BLOB_TOKEN });
     return NextResponse.json({ url: blob.url });
 }

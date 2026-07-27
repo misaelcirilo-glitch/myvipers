@@ -147,10 +147,12 @@ async function handleUpdate(req: Request) {
     if (rows.length === 0) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
 
     // Best-effort: si la foto cambió y la anterior era un Blob nuestro, bórrala (no bloquea el guardado).
-    if (oldUrl && oldUrl !== (image_url || null) && oldUrl.includes('.public.blob.vercel-storage.com')) {
+    // Usa el token del store retail (RETAIL_BLOB_READ_WRITE_TOKEN), no el de la carta de El Machay.
+    const retailBlobToken = process.env.RETAIL_BLOB_READ_WRITE_TOKEN;
+    if (retailBlobToken && oldUrl && oldUrl !== (image_url || null) && oldUrl.includes('.public.blob.vercel-storage.com')) {
         try {
             const { del } = await import('@vercel/blob');
-            await del(oldUrl);
+            await del(oldUrl, { token: retailBlobToken });
         } catch { /* huérfano tolerable: coste marginal */ }
     }
 
