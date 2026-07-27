@@ -6,25 +6,28 @@ import { z } from 'zod';
 // Retail — catálogo de productos (PRP-myvipers-001, Fase 3). Aislado por tenant
 // (restaurant_id de la sesión). Gestión solo admin. Zod v4 (error.issues).
 
-const createSchema = z.object({
-    name: z.string().trim().min(1, 'Nombre requerido'),
+const productFields = {
     description: z.string().trim().optional().nullable(),
     category: z.string().trim().optional().nullable(),           // texto libre legacy (PRP-001)
     category_id: z.string().uuid('Categoría inválida').optional().nullable(),
-    base_price: z.number().nonnegative('Precio inválido').default(0),
+    brand: z.string().trim().optional().nullable(),
+    discount_price: z.number().nonnegative('Descuento inválido').optional().nullable(),
+    season: z.string().trim().optional().nullable(),
     image_url: z.string().trim().optional().nullable(),
     sort_order: z.number().int().optional().default(0),
+};
+
+const createSchema = z.object({
+    name: z.string().trim().min(1, 'Nombre requerido'),
+    base_price: z.number().nonnegative('Precio inválido').default(0),
+    ...productFields,
 });
 
 const updateSchema = z.object({
     id: z.string().uuid('ID inválido'),
     name: z.string().trim().min(1, 'Nombre requerido'),
-    description: z.string().trim().optional().nullable(),
-    category: z.string().trim().optional().nullable(),
-    category_id: z.string().uuid('Categoría inválida').optional().nullable(),
     base_price: z.number().nonnegative('Precio inválido'),
-    image_url: z.string().trim().optional().nullable(),
-    sort_order: z.number().int().optional().default(0),
+    ...productFields,
 });
 
 const deleteSchema = z.object({ id: z.string().uuid('ID inválido') });
@@ -51,7 +54,8 @@ export async function GET() {
 
     const products = await db`
         SELECT p.id, p.name, p.description, p.category, p.category_id, c.name AS category_name,
-               p.base_price, p.image_url, p.sort_order, p.is_active, p.created_at
+               p.brand, p.base_price, p.discount_price, p.season,
+               p.image_url, p.sort_order, p.is_active, p.created_at
         FROM retail_products p
         LEFT JOIN retail_categories c ON c.id = p.category_id AND c.restaurant_id = p.restaurant_id
         WHERE p.restaurant_id = ${session.restaurantId} AND p.is_active = true
@@ -81,7 +85,7 @@ export async function POST(req: Request) {
     if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
-    const { name, description, category, category_id, base_price, image_url, sort_order } = parsed.data;
+    const { name, description, category, category_id, brand, discount_price, season, base_price, image_url, sort_order } = parsed.data;
 
     // La categoría (si viene) debe pertenecer al tenant.
     if (category_id && !(await categoryBelongsToTenant(category_id, session.restaurantId))) {
@@ -89,9 +93,9 @@ export async function POST(req: Request) {
     }
 
     const rows = await db`
-        INSERT INTO retail_products (restaurant_id, name, description, category, category_id, base_price, image_url, sort_order)
-        VALUES (${session.restaurantId}, ${name}, ${description || null}, ${category || null}, ${category_id || null}, ${base_price}, ${image_url || null}, ${sort_order})
-        RETURNING id, name, description, category, category_id, base_price, image_url, sort_order, is_active, created_at
+        INSERT INTO retail_products (restaurant_id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order)
+        VALUES (${session.restaurantId}, ${name}, ${description || null}, ${category || null}, ${category_id || null}, ${brand || null}, ${base_price}, ${discount_price ?? null}, ${season || null}, ${image_url || null}, ${sort_order})
+        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order, is_active, created_at
     `;
     return NextResponse.json({ product: { ...rows[0], variants: [] } });
 }
@@ -104,7 +108,7 @@ async function handleUpdate(req: Request) {
     if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
-    const { id, name, description, category, category_id, base_price, image_url, sort_order } = parsed.data;
+    const { id, name, description, category, category_id, brand, discount_price, season, base_price, image_url, sort_order } = parsed.data;
 
     if (category_id && !(await categoryBelongsToTenant(category_id, session.restaurantId))) {
         return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 400 });
@@ -113,11 +117,12 @@ async function handleUpdate(req: Request) {
     const rows = await db`
         UPDATE retail_products
         SET name = ${name}, description = ${description || null}, category = ${category || null},
-            category_id = ${category_id || null},
-            base_price = ${base_price}, image_url = ${image_url || null}, sort_order = ${sort_order},
+            category_id = ${category_id || null}, brand = ${brand || null},
+            base_price = ${base_price}, discount_price = ${discount_price ?? null}, season = ${season || null},
+            image_url = ${image_url || null}, sort_order = ${sort_order},
             updated_at = now()
         WHERE id = ${id} AND restaurant_id = ${session.restaurantId}
-        RETURNING id, name, description, category, category_id, base_price, image_url, sort_order, is_active, created_at
+        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order, is_active, created_at
     `;
     if (rows.length === 0) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
     return NextResponse.json({ product: rows[0] });

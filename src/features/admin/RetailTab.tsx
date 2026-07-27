@@ -26,7 +26,10 @@ interface Product {
     category: string | null;            // texto libre legacy (PRP-001)
     category_id: string | null;
     category_name: string | null;       // nombre de la categoría jerárquica (join)
+    brand: string | null;
     base_price: string | number;
+    discount_price: string | number | null;
+    season: string | null;
     image_url: string | null;
     variants: Variant[];
 }
@@ -38,12 +41,12 @@ interface Category {
     sort_order: number;
 }
 
-type ProductForm = { id?: string; name: string; description: string; category_id: string; base_price: string; image_url: string };
+type ProductForm = { id?: string; name: string; description: string; category_id: string; brand: string; base_price: string; discount_price: string; season: string; image_url: string };
 type VariantForm = { id?: string; product_id: string; size: string; color: string; sku: string; price: string; stock: string; low_stock_threshold: string };
 type StockForm = { variant_id: string; type: 'entrada' | 'salida' | 'ajuste'; quantity: string; reason: string };
 type CategoryForm = { id?: string; name: string; parent_id: string; sort_order: string };
 
-const EMPTY_PRODUCT: ProductForm = { name: '', description: '', category_id: '', base_price: '', image_url: '' };
+const EMPTY_PRODUCT: ProductForm = { name: '', description: '', category_id: '', brand: '', base_price: '', discount_price: '', season: '', image_url: '' };
 
 const inputCls = 'w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-amber-500 text-sm';
 
@@ -103,7 +106,10 @@ export function RetailTab() {
                     name: productForm.name.trim(),
                     description: productForm.description || null,
                     category_id: productForm.category_id || null,
+                    brand: productForm.brand || null,
                     base_price: parseFloat(productForm.base_price) || 0,
+                    discount_price: productForm.discount_price ? parseFloat(productForm.discount_price) : null,
+                    season: productForm.season || null,
                     image_url: productForm.image_url || null,
                 }),
             });
@@ -283,13 +289,20 @@ export function RetailTab() {
                             ? <img src={p.image_url} alt={p.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
                             : <div className="w-12 h-12 rounded-lg bg-[#0f0f1a] flex items-center justify-center shrink-0"><Package size={16} className="text-slate-600" /></div>}
                         <div className="flex-1 min-w-0">
-                            <p className="font-bold text-sm text-white truncate">{p.name}</p>
+                            <p className="font-bold text-sm text-white truncate">
+                                {p.name}
+                                {p.brand ? <span className="text-slate-500 font-normal"> · {p.brand}</span> : ''}
+                            </p>
                             <p className="text-[10px] text-slate-500 truncate">
-                                {(p.category_name || p.category) ? `${p.category_name || p.category} · ` : ''}{money(p.base_price)} · {p.variants.length} variante{p.variants.length === 1 ? '' : 's'}
+                                {(p.category_name || p.category) ? `${p.category_name || p.category} · ` : ''}
+                                {p.discount_price != null
+                                    ? <><span className="line-through">{money(p.base_price)}</span> <span className="text-amber-400 font-bold">{money(p.discount_price)}</span></>
+                                    : money(p.base_price)}
+                                {p.season ? ` · ${p.season}` : ''} · {p.variants.length} variante{p.variants.length === 1 ? '' : 's'}
                             </p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => { setError(null); setProductForm({ id: p.id, name: p.name, description: p.description || '', category_id: p.category_id || '', base_price: String(p.base_price), image_url: p.image_url || '' }); }} className="p-1.5 text-slate-400 hover:text-amber-400 transition"><Edit2 size={15} /></button>
+                            <button onClick={() => { setError(null); setProductForm({ id: p.id, name: p.name, description: p.description || '', category_id: p.category_id || '', brand: p.brand || '', base_price: String(p.base_price), discount_price: p.discount_price != null ? String(p.discount_price) : '', season: p.season || '', image_url: p.image_url || '' }); }} className="p-1.5 text-slate-400 hover:text-amber-400 transition"><Edit2 size={15} /></button>
                             <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-slate-400 hover:text-red-400 transition"><Trash2 size={15} /></button>
                         </div>
                     </div>
@@ -340,8 +353,13 @@ export function RetailTab() {
                                     <option key={cat.id} value={cat.id}>{' '.repeat(depth * 2)}{depth > 0 ? '└ ' : ''}{cat.name}</option>
                                 ))}
                             </select>
-                            <input className={inputCls} type="number" step="0.01" min="0" placeholder="Precio base" value={productForm.base_price} onChange={e => setProductForm({ ...productForm, base_price: e.target.value })} />
+                            <input className={inputCls} placeholder="Marca (opcional)" value={productForm.brand} onChange={e => setProductForm({ ...productForm, brand: e.target.value })} />
                         </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <input className={inputCls} type="number" step="0.01" min="0" placeholder="Precio base" value={productForm.base_price} onChange={e => setProductForm({ ...productForm, base_price: e.target.value })} />
+                            <input className={inputCls} type="number" step="0.01" min="0" placeholder="Precio oferta (opcional)" value={productForm.discount_price} onChange={e => setProductForm({ ...productForm, discount_price: e.target.value })} />
+                        </div>
+                        <input className={inputCls} placeholder="Temporada (ej. Verano 2026, opcional)" value={productForm.season} onChange={e => setProductForm({ ...productForm, season: e.target.value })} />
                         <input className={inputCls} placeholder="URL de imagen (opcional)" value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
                         {error && <p className="text-red-400 text-xs text-center">{error}</p>}
                         <SubmitBtn saving={saving} label={productForm.id ? 'Guardar cambios' : 'Crear producto'} />
