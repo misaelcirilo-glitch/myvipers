@@ -13,6 +13,9 @@ const productFields = {
     brand: z.string().trim().optional().nullable(),
     discount_price: z.number().nonnegative('Descuento inválido').optional().nullable(),
     season: z.string().trim().optional().nullable(),
+    // Etiquetas de eje de variante (Fase 3). Vacío ⇒ ese eje se oculta (accesorio).
+    axis1_label: z.string().trim().optional().nullable(),
+    axis2_label: z.string().trim().optional().nullable(),
     image_url: z.string().trim().optional().nullable(),
     sort_order: z.number().int().optional().default(0),
 };
@@ -55,6 +58,7 @@ export async function GET() {
     const products = await db`
         SELECT p.id, p.name, p.description, p.category, p.category_id, c.name AS category_name,
                p.brand, p.base_price, p.discount_price, p.season,
+               p.axis1_label, p.axis2_label,
                p.image_url, p.sort_order, p.is_active, p.created_at
         FROM retail_products p
         LEFT JOIN retail_categories c ON c.id = p.category_id AND c.restaurant_id = p.restaurant_id
@@ -85,17 +89,21 @@ export async function POST(req: Request) {
     if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
-    const { name, description, category, category_id, brand, discount_price, season, base_price, image_url, sort_order } = parsed.data;
+    const { name, description, category, category_id, brand, discount_price, season, axis1_label, axis2_label, base_price, image_url, sort_order } = parsed.data;
 
     // La categoría (si viene) debe pertenecer al tenant.
     if (category_id && !(await categoryBelongsToTenant(category_id, session.restaurantId))) {
         return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 400 });
     }
 
+    // Ejes: omitido ⇒ default ropa (Talla/Color); vacío ⇒ null = eje oculto (accesorio).
+    const axis1 = axis1_label === undefined ? 'Talla' : (axis1_label || null);
+    const axis2 = axis2_label === undefined ? 'Color' : (axis2_label || null);
+
     const rows = await db`
-        INSERT INTO retail_products (restaurant_id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order)
-        VALUES (${session.restaurantId}, ${name}, ${description || null}, ${category || null}, ${category_id || null}, ${brand || null}, ${base_price}, ${discount_price ?? null}, ${season || null}, ${image_url || null}, ${sort_order})
-        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order, is_active, created_at
+        INSERT INTO retail_products (restaurant_id, name, description, category, category_id, brand, base_price, discount_price, season, axis1_label, axis2_label, image_url, sort_order)
+        VALUES (${session.restaurantId}, ${name}, ${description || null}, ${category || null}, ${category_id || null}, ${brand || null}, ${base_price}, ${discount_price ?? null}, ${season || null}, ${axis1}, ${axis2}, ${image_url || null}, ${sort_order})
+        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, axis1_label, axis2_label, image_url, sort_order, is_active, created_at
     `;
     return NextResponse.json({ product: { ...rows[0], variants: [] } });
 }
@@ -108,21 +116,26 @@ async function handleUpdate(req: Request) {
     if (!parsed.success) {
         return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
-    const { id, name, description, category, category_id, brand, discount_price, season, base_price, image_url, sort_order } = parsed.data;
+    const { id, name, description, category, category_id, brand, discount_price, season, axis1_label, axis2_label, base_price, image_url, sort_order } = parsed.data;
 
     if (category_id && !(await categoryBelongsToTenant(category_id, session.restaurantId))) {
         return NextResponse.json({ error: 'Categoría no encontrada' }, { status: 400 });
     }
+
+    // Ejes: omitido ⇒ default ropa (Talla/Color); vacío ⇒ null = eje oculto (accesorio).
+    const axis1 = axis1_label === undefined ? 'Talla' : (axis1_label || null);
+    const axis2 = axis2_label === undefined ? 'Color' : (axis2_label || null);
 
     const rows = await db`
         UPDATE retail_products
         SET name = ${name}, description = ${description || null}, category = ${category || null},
             category_id = ${category_id || null}, brand = ${brand || null},
             base_price = ${base_price}, discount_price = ${discount_price ?? null}, season = ${season || null},
+            axis1_label = ${axis1}, axis2_label = ${axis2},
             image_url = ${image_url || null}, sort_order = ${sort_order},
             updated_at = now()
         WHERE id = ${id} AND restaurant_id = ${session.restaurantId}
-        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, image_url, sort_order, is_active, created_at
+        RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, axis1_label, axis2_label, image_url, sort_order, is_active, created_at
     `;
     if (rows.length === 0) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
     return NextResponse.json({ product: rows[0] });

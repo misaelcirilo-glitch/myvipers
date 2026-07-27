@@ -30,6 +30,8 @@ interface Product {
     base_price: string | number;
     discount_price: string | number | null;
     season: string | null;
+    axis1_label: string | null;         // etiqueta eje 1 (Talla/Numeración…); vacío ⇒ eje oculto
+    axis2_label: string | null;         // etiqueta eje 2 (Color…); vacío ⇒ eje oculto
     image_url: string | null;
     variants: Variant[];
 }
@@ -41,12 +43,12 @@ interface Category {
     sort_order: number;
 }
 
-type ProductForm = { id?: string; name: string; description: string; category_id: string; brand: string; base_price: string; discount_price: string; season: string; image_url: string };
+type ProductForm = { id?: string; name: string; description: string; category_id: string; brand: string; base_price: string; discount_price: string; season: string; axis1_label: string; axis2_label: string; image_url: string };
 type VariantForm = { id?: string; product_id: string; size: string; color: string; sku: string; price: string; stock: string; low_stock_threshold: string };
 type StockForm = { variant_id: string; type: 'entrada' | 'salida' | 'ajuste'; quantity: string; reason: string };
 type CategoryForm = { id?: string; name: string; parent_id: string; sort_order: string };
 
-const EMPTY_PRODUCT: ProductForm = { name: '', description: '', category_id: '', brand: '', base_price: '', discount_price: '', season: '', image_url: '' };
+const EMPTY_PRODUCT: ProductForm = { name: '', description: '', category_id: '', brand: '', base_price: '', discount_price: '', season: '', axis1_label: 'Talla', axis2_label: 'Color', image_url: '' };
 
 const inputCls = 'w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-amber-500 text-sm';
 
@@ -87,6 +89,11 @@ export function RetailTab() {
 
     const orderedCats = orderedCategories(categories);
 
+    // Ejes del producto de la variante en edición (Fase 3). Etiqueta vacía ⇒ eje oculto.
+    const variantProduct = variantForm ? products.find(p => p.id === variantForm.product_id) : null;
+    const axis1 = (variantProduct?.axis1_label ?? 'Talla').trim();
+    const axis2 = (variantProduct?.axis2_label ?? 'Color').trim();
+
     const lowStock = products.flatMap(p =>
         p.variants.filter(v => v.stock <= v.low_stock_threshold).map(v => ({ product: p, variant: v }))
     );
@@ -110,6 +117,8 @@ export function RetailTab() {
                     base_price: parseFloat(productForm.base_price) || 0,
                     discount_price: productForm.discount_price ? parseFloat(productForm.discount_price) : null,
                     season: productForm.season || null,
+                    axis1_label: productForm.axis1_label.trim(),
+                    axis2_label: productForm.axis2_label.trim(),
                     image_url: productForm.image_url || null,
                 }),
             });
@@ -302,7 +311,7 @@ export function RetailTab() {
                             </p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
-                            <button onClick={() => { setError(null); setProductForm({ id: p.id, name: p.name, description: p.description || '', category_id: p.category_id || '', brand: p.brand || '', base_price: String(p.base_price), discount_price: p.discount_price != null ? String(p.discount_price) : '', season: p.season || '', image_url: p.image_url || '' }); }} className="p-1.5 text-slate-400 hover:text-amber-400 transition"><Edit2 size={15} /></button>
+                            <button onClick={() => { setError(null); setProductForm({ id: p.id, name: p.name, description: p.description || '', category_id: p.category_id || '', brand: p.brand || '', base_price: String(p.base_price), discount_price: p.discount_price != null ? String(p.discount_price) : '', season: p.season || '', axis1_label: p.axis1_label || '', axis2_label: p.axis2_label || '', image_url: p.image_url || '' }); }} className="p-1.5 text-slate-400 hover:text-amber-400 transition"><Edit2 size={15} /></button>
                             <button onClick={() => deleteProduct(p.id)} className="p-1.5 text-slate-400 hover:text-red-400 transition"><Trash2 size={15} /></button>
                         </div>
                     </div>
@@ -360,6 +369,11 @@ export function RetailTab() {
                             <input className={inputCls} type="number" step="0.01" min="0" placeholder="Precio oferta (opcional)" value={productForm.discount_price} onChange={e => setProductForm({ ...productForm, discount_price: e.target.value })} />
                         </div>
                         <input className={inputCls} placeholder="Temporada (ej. Verano 2026, opcional)" value={productForm.season} onChange={e => setProductForm({ ...productForm, season: e.target.value })} />
+                        <div className="grid grid-cols-2 gap-3">
+                            <input className={inputCls} placeholder="Eje 1 (Talla / Numeración)" value={productForm.axis1_label} onChange={e => setProductForm({ ...productForm, axis1_label: e.target.value })} />
+                            <input className={inputCls} placeholder="Eje 2 (Color)" value={productForm.axis2_label} onChange={e => setProductForm({ ...productForm, axis2_label: e.target.value })} />
+                        </div>
+                        <p className="text-[10px] text-slate-500 -mt-1">Ropa: Talla/Color · Calzado: Numeración/Color · Accesorio: deja un eje vacío para ocultarlo.</p>
                         <input className={inputCls} placeholder="URL de imagen (opcional)" value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
                         {error && <p className="text-red-400 text-xs text-center">{error}</p>}
                         <SubmitBtn saving={saving} label={productForm.id ? 'Guardar cambios' : 'Crear producto'} />
@@ -389,10 +403,14 @@ export function RetailTab() {
             {variantForm && (
                 <Modal title={variantForm.id ? 'Editar variante' : 'Nueva variante'} onClose={() => setVariantForm(null)}>
                     <form onSubmit={saveVariant} className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                            <input className={inputCls} placeholder="Talla (S/M/L)" value={variantForm.size} onChange={e => setVariantForm({ ...variantForm, size: e.target.value })} />
-                            <input className={inputCls} placeholder="Color" value={variantForm.color} onChange={e => setVariantForm({ ...variantForm, color: e.target.value })} />
-                        </div>
+                        {(axis1 || axis2) ? (
+                            <div className={`grid gap-3 ${axis1 && axis2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                {axis1 && <input className={inputCls} placeholder={axis1} value={variantForm.size} onChange={e => setVariantForm({ ...variantForm, size: e.target.value })} />}
+                                {axis2 && <input className={inputCls} placeholder={axis2} value={variantForm.color} onChange={e => setVariantForm({ ...variantForm, color: e.target.value })} />}
+                            </div>
+                        ) : (
+                            <p className="text-[11px] text-slate-500">Este producto no usa ejes: variante única (Estándar).</p>
+                        )}
                         <input className={inputCls} placeholder="SKU (opcional, único)" value={variantForm.sku} onChange={e => setVariantForm({ ...variantForm, sku: e.target.value })} />
                         <div className="grid grid-cols-2 gap-3">
                             <input className={inputCls} type="number" step="0.01" min="0" placeholder="Precio (o base)" value={variantForm.price} onChange={e => setVariantForm({ ...variantForm, price: e.target.value })} />
