@@ -126,6 +126,13 @@ async function handleUpdate(req: Request) {
     const axis1 = axis1_label === undefined ? 'Talla' : (axis1_label || null);
     const axis2 = axis2_label === undefined ? 'Color' : (axis2_label || null);
 
+    // Foto anterior (para limpiar el Blob si se reemplaza/quita).
+    const prev = await db`
+        SELECT image_url FROM retail_products
+        WHERE id = ${id} AND restaurant_id = ${session.restaurantId} LIMIT 1
+    `;
+    const oldUrl = prev[0]?.image_url as string | null | undefined;
+
     const rows = await db`
         UPDATE retail_products
         SET name = ${name}, description = ${description || null}, category = ${category || null},
@@ -138,6 +145,15 @@ async function handleUpdate(req: Request) {
         RETURNING id, name, description, category, category_id, brand, base_price, discount_price, season, axis1_label, axis2_label, image_url, sort_order, is_active, created_at
     `;
     if (rows.length === 0) return NextResponse.json({ error: 'Producto no encontrado' }, { status: 404 });
+
+    // Best-effort: si la foto cambió y la anterior era un Blob nuestro, bórrala (no bloquea el guardado).
+    if (oldUrl && oldUrl !== (image_url || null) && oldUrl.includes('.public.blob.vercel-storage.com')) {
+        try {
+            const { del } = await import('@vercel/blob');
+            await del(oldUrl);
+        } catch { /* huérfano tolerable: coste marginal */ }
+    }
+
     return NextResponse.json({ product: rows[0] });
 }
 

@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, X, Loader2, Package, AlertTriangle, Layers, ArrowUpDown, FolderTree, ChevronDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Loader2, Package, AlertTriangle, Layers, ArrowUpDown, FolderTree, ChevronDown, Upload } from 'lucide-react';
 
 // Retail — gestión de catálogo, categorías, variantes y stock.
 // PRP-myvipers-001 (Fase 3) + PRP-myvipers-002 (categorías, Fase 1).
@@ -52,6 +52,24 @@ const EMPTY_PRODUCT: ProductForm = { name: '', description: '', category_id: '',
 
 const inputCls = 'w-full px-4 py-3 bg-[#0f0f1a] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-amber-500 text-sm';
 
+// Recomprime en el cliente antes de subir: reduce a máx 1200px y ~0.8 de calidad.
+// Mantiene el peso bajo (coste Blob marginal) sin dependencias de servidor.
+async function resizeImage(file: File, maxDim = 1200, quality = 0.8): Promise<Blob> {
+    const bitmap = await createImageBitmap(file);
+    let { width, height } = bitmap;
+    if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0, width, height);
+    const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    return await new Promise<Blob>((resolve, reject) =>
+        canvas.toBlob(b => (b ? resolve(b) : reject(new Error('toBlob'))), type, quality));
+}
+
 // Aplana el árbol de categorías en orden padre→hijos con profundidad (para selects y tree).
 function orderedCategories(cats: Category[]): { cat: Category; depth: number }[] {
     const byParent: Record<string, Category[]> = {};
@@ -74,7 +92,24 @@ export function RetailTab() {
     const [categoryForm, setCategoryForm] = useState<CategoryForm | null>(null);
     const [showCats, setShowCats] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const uploadPhoto = async (file: File) => {
+        setUploading(true); setError(null);
+        try {
+            const resized = await resizeImage(file);
+            const ext = resized.type === 'image/png' ? 'png' : 'jpg';
+            const fd = new FormData();
+            fd.append('file', new File([resized], `foto.${ext}`, { type: resized.type }));
+            const res = await fetch('/api/admin/retail/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok) { setError(data.error || 'Error al subir la foto'); return; }
+            setProductForm(pf => (pf ? { ...pf, image_url: data.url } : pf));
+        } catch {
+            setError('No se pudo procesar la imagen');
+        } finally { setUploading(false); }
+    };
 
     const load = async () => {
         const [prod, cats] = await Promise.all([
@@ -374,7 +409,24 @@ export function RetailTab() {
                             <input className={inputCls} placeholder="Eje 2 (Color)" value={productForm.axis2_label} onChange={e => setProductForm({ ...productForm, axis2_label: e.target.value })} />
                         </div>
                         <p className="text-[10px] text-slate-500 -mt-1">Ropa: Talla/Color · Calzado: Numeración/Color · Accesorio: deja un eje vacío para ocultarlo.</p>
-                        <input className={inputCls} placeholder="URL de imagen (opcional)" value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
+
+                        {/* Foto principal (Vercel Blob) */}
+                        <div className="flex items-center gap-3">
+                            {productForm.image_url
+                                ? <img src={productForm.image_url} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
+                                : <div className="w-16 h-16 rounded-lg bg-[#1a1a2e] border border-white/10 flex items-center justify-center shrink-0"><Package size={18} className="text-slate-600" /></div>}
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                                <label className={`flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold cursor-pointer transition ${uploading ? 'bg-[#1a1a2e] text-slate-500' : 'bg-amber-400/10 text-amber-400 hover:bg-amber-400/20'}`}>
+                                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploading}
+                                        onChange={e => { const f = e.target.files?.[0]; if (f) uploadPhoto(f); e.target.value = ''; }} />
+                                    {uploading ? <><Loader2 size={14} className="animate-spin" /> Subiendo…</> : <><Upload size={14} /> {productForm.image_url ? 'Cambiar foto' : 'Subir foto'}</>}
+                                </label>
+                                {productForm.image_url && (
+                                    <button type="button" onClick={() => setProductForm({ ...productForm, image_url: '' })} className="text-[11px] text-slate-500 hover:text-red-400 transition">Quitar foto</button>
+                                )}
+                            </div>
+                        </div>
+                        <input className={inputCls} placeholder="o pega una URL de imagen" value={productForm.image_url} onChange={e => setProductForm({ ...productForm, image_url: e.target.value })} />
                         {error && <p className="text-red-400 text-xs text-center">{error}</p>}
                         <SubmitBtn saving={saving} label={productForm.id ? 'Guardar cambios' : 'Crear producto'} />
                     </form>
