@@ -17,6 +17,25 @@ export function pushSupported(): boolean {
         && 'Notification' in window;
 }
 
+// iOS/iPadOS: el push solo existe en la PWA INSTALADA (16.4+). En Safari sin
+// instalar, pushSupported() da false. Detectamos iOS para guiar la instalación.
+export function isIOS(): boolean {
+    if (typeof navigator === 'undefined') return false;
+    const ua = navigator.userAgent || '';
+    const iPhoneiPad = /iphone|ipad|ipod/i.test(ua);
+    // iPadOS 13+ se presenta como "Mac"; se distingue por pantalla táctil.
+    const iPadOSasMac = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+    return iPhoneiPad || iPadOSasMac;
+}
+
+// ¿La app está abierta como PWA instalada (standalone)? En iOS el flag fiable es
+// navigator.standalone; en el resto, el media query display-mode.
+export function isStandalone(): boolean {
+    if (typeof window === 'undefined') return false;
+    const iosStandalone = (navigator as unknown as { standalone?: boolean }).standalone === true;
+    return iosStandalone || window.matchMedia('(display-mode: standalone)').matches;
+}
+
 export async function getPushPermission(): Promise<NotificationPermission> {
     if (!pushSupported()) return 'denied';
     return Notification.permission;
