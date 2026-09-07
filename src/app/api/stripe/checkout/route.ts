@@ -10,7 +10,10 @@ import { z } from 'zod';
 // customer en el tenant (restaurants) y abrir checkout.sessions (mode subscription).
 
 const schema = z.object({
-    region: z.enum(['eur', 'latam']),
+    // TODO(seguridad): la región llega del cliente. Con tarifas distintas por región
+    // (49 € / $15 / S/ 49) cualquiera puede pedir la más barata. Derivarla en servidor
+    // desde el tenant (país/moneda del negocio) en lugar de confiar en el body.
+    region: z.enum(['eur', 'latam', 'pen']),
     billing: z.enum(['mensual', 'anual']),
 });
 

@@ -18,6 +18,7 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
+    const [customerList, setCustomerList] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [assigning, setAssigning] = useState(false);
@@ -349,6 +350,15 @@ export default function AdminPage() {
         return () => clearTimeout(t);
     }, [searchQuery]);
 
+    // Lista completa de clientes (tab "Clientes"). Se recarga al abrir el tab.
+    useEffect(() => {
+        if (tab !== 'clientes') return;
+        fetch('/api/admin/customers')
+            .then(r => r.json())
+            .then(d => setCustomerList(d.customers || []))
+            .catch(() => setCustomerList([]));
+    }, [tab]);
+
     const handleAssignPoints = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedCustomer) return;
@@ -409,23 +419,23 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats — tarjetas clicables que llevan a su sección */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                <button type="button" onClick={() => setTab('reservations')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-blue-500/50 active:scale-95 transition">
                     <CalendarDays size={18} className="text-blue-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayReservations?.length || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Reservas hoy</p>
-                </div>
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                </button>
+                <button type="button" onClick={() => setTab('clientes')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-green-500/50 active:scale-95 transition">
                     <Users size={18} className="text-green-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.totalCustomers || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Clientes VIP</p>
-                </div>
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                </button>
+                <button type="button" onClick={() => setTab('points')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-amber-500/50 active:scale-95 transition">
                     <Star size={18} className="text-amber-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayPoints || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Puntos hoy</p>
-                </div>
+                </button>
             </div>
 
             {/* Assign Points Form */}
@@ -946,15 +956,33 @@ export default function AdminPage() {
 
                     {/* Lista de clientes */}
                     <div className="space-y-2">
-                        {(dashboard?.totalCustomers || 0) > 0 ? (
-                            <p className="text-sm text-slate-500 text-center py-4">
-                                {dashboard.totalCustomers} clientes VIP registrados.
-                                Busca uno en la sección "Asignar Puntos" de arriba.
-                            </p>
-                        ) : (
+                        {customerList.length === 0 ? (
                             <p className="text-sm text-slate-500 text-center py-6">
                                 Sin clientes aún. Registra el primero con el botón de arriba.
                             </p>
+                        ) : (
+                            <>
+                                <p className="text-[11px] text-slate-500 px-1">{customerList.length} clientes VIP · toca uno para asignarle puntos</p>
+                                {customerList.map(c => (
+                                    <button
+                                        key={c.id} type="button"
+                                        onClick={() => setSelectedCustomer(c)}
+                                        className="w-full flex items-center gap-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl px-3 py-2.5 hover:border-amber-500/40 transition text-left"
+                                    >
+                                        <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-black text-sm shrink-0">
+                                            {c.name?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-white text-sm truncate">{c.name}</p>
+                                            <p className="text-[10px] text-slate-500 truncate">{c.phone} · {c.vip_level}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-amber-400 font-black text-sm">{c.available_points}</p>
+                                            <p className="text-[9px] text-slate-500 uppercase tracking-widest">pts</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
                         )}
                     </div>
                 </div>
