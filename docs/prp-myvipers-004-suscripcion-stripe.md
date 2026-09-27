@@ -1,6 +1,6 @@
 # PRP-myvipers-004 — Suscripción de pago (activación automática vía Stripe)
 
-**Estado:** DESPLEGADO (2026-09-27): 012 aplicada en prod (backup `backup-pre-012`), `stripe-billing` pusheada y desplegada `--prod` a mvipers (myvipers.es) y el-machay. **Probado en modo Test (2026-09-27)** con Tienda Demo: suscribir → `active` (customer, subscription, lookup_key y periodo guardados) y cancelar inmediato → `canceled`. **Pendiente**: precio `myvipers_anual_latam` en Test y repetir la configuración en **Live**.
+**Estado:** DESPLEGADO (2026-09-27): 012 aplicada en prod (backup `backup-pre-012`), `stripe-billing` pusheada y desplegada `--prod` a mvipers (myvipers.es) y el-machay. **Probado en modo Test (2026-09-27)** con Tienda Demo: suscribir → `active` (customer, subscription, lookup_key y periodo guardados) y cancelar inmediato → `canceled`. **EN LIVE (2026-09-27)**: clave restringida propia `MyVipers Production` (plantilla "Facturación y suscripciones recurrentes") + webhook Live en Vercel `mvipers`; redesplegado; el panel lee precios Live (PEN 49/mes, 490/año). Tienda Demo limpiada de datos Test. La clave estándar de la cuenta VERIOSKA no la usa nadie desde 2026-09-11 (Dental Cloud usa su restringida "Verioska Backend Production").
 **Owner:** Misael
 
 ## 1. Punto de partida real (verificado 2026-09-27)
@@ -51,7 +51,7 @@ Producción (myvipers.es) ya corre el código de `stripe-billing` (desplegado po
 - [x] Checkout con metadata correcta y región decidida en servidor.
 - [x] Segundo webhook registrado en Stripe (modo Test).
 - [x] Probado en modo Test (suscribir → `active`, cancelar → `canceled`) — 2026-09-27.
-- [ ] Configuración repetida en Live (precios con lookup_key, webhook, portal, env).
+- [x] Configuración en Live (precios con lookup_key, webhook, portal, env) — 2026-09-27.
 - [x] Webhook ignora precios fuera de la lista blanca (tests).
 - [x] El panel muestra el estado de facturación.
 
