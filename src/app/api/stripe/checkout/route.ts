@@ -99,6 +99,12 @@ export async function POST(request: Request) {
         },
         success_url: `${origin}/admin?checkout=ok`,
         cancel_url: `${origin}/admin?checkout=cancel`,
+        // La cuenta Stripe es compartida con Verioska: sin esto la cabecera del
+        // pago muestra "VERIOSKA". Recibos y extracto siguen usando el nombre de la cuenta.
+        branding_settings: {
+            display_name: 'MyVipers',
+            icon: { type: 'url', url: `${origin}/icon-512.png` },
+        },
     });
 
     if (!checkout.url) {
