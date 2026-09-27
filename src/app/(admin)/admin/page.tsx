@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt, Package } from 'lucide-react';
 import { BoletasTab } from '@/features/admin/BoletasTab';
 import { RetailTab } from '@/features/admin/RetailTab';
+import { BillingCard } from '@/features/admin/BillingCard';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -51,6 +52,24 @@ export default function AdminPage() {
     const [editingReward, setEditingReward] = useState<any>(null);
     const [logoUploading, setLogoUploading] = useState(false);
     const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
+    const [checkoutResult, setCheckoutResult] = useState<'ok' | 'cancel' | null>(null);
+
+    // Vuelta de Stripe Checkout (?checkout=ok|cancel) o del Billing Portal
+    // (?tab=config): abrir la pestaña Config, donde está la suscripción, y
+    // limpiar la URL para que un refresco no repita el aviso.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const checkout = params.get('checkout');
+        if (checkout === 'ok' || checkout === 'cancel') {
+            setCheckoutResult(checkout);
+            setTab('config');
+        } else if (params.get('tab') === 'config') {
+            setTab('config');
+        }
+        if (checkout || params.get('tab')) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, []);
 
     useEffect(() => {
         if (loading) return;
@@ -1274,6 +1293,12 @@ export default function AdminPage() {
             {/* Config Tab - Logo */}
             {tab === 'config' && (
                 <div className="space-y-4">
+                    {user?.role === 'admin' && (
+                        <>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Suscripción</h3>
+                            <BillingCard checkoutResult={checkoutResult} />
+                        </>
+                    )}
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Logo del restaurante</h3>
                     <p className="text-[10px] text-slate-500">Este logo aparecerá como icono cuando los clientes agreguen tu restaurante a su móvil.</p>
 

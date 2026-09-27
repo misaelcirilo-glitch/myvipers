@@ -1,0 +1,60 @@
+# PRP-myvipers-004 — Suscripción de pago (activación automática vía Stripe)
+
+**Estado:** Código listo en rama `stripe-billing` · migración validada en staging · **pendiente**: configurar Stripe/Vercel, aplicar 012 en prod, deploy y prueba en modo Test.
+**Owner:** Misael
+
+## 1. Punto de partida real (verificado 2026-09-27)
+
+El PRP asumía que no había nada construido. No era así:
+
+| Pieza | Estado encontrado |
+|---|---|
+| Migración `012-stripe-billing.sql` (columnas Stripe en `restaurants`) | Escrita, **no aplicada en prod** |
+| `POST /api/stripe/checkout` | Existía; la **región venía del cliente** (TODO de seguridad) |
+| `POST /api/stripe/webhook` | Existía; **sin lista blanca**, solo eventos `customer.subscription.*` |
+| Billing Portal | No existía |
+| Pantalla de facturación en el panel | No existía (nada llamaba al checkout) |
+| Variables en Vercel `mvipers` (myvipers.es) | **Ninguna** de Stripe |
+
+Producción (myvipers.es) ya corre el código de `stripe-billing` (desplegado por CLI; `main` va por detrás). El webhook responde 503 "Webhook no configurado".
+
+## 2. Qué se hizo
+
+- **`src/shared/lib/billing.ts`** (lógica pura, testeada): región por país, lista blanca de `lookup_key`, mapeo de estados, extracción de ids de eventos (formas de API antigua y nueva de Stripe).
+- **Checkout**: la región se decide en **servidor** desde `restaurants.country` (PE → `pen`, Europa → `eur`, resto → `latam`, sin país → `eur`). Si la región PEN no tiene precio en Stripe, cobra la tarifa LATAM. Si ya hay suscripción viva → 409 (se gestiona en el portal; evita dos suscripciones). Metadata `restaurant_id` + `plan_lookup_key` + `product=myvipers`.
+- **Webhook**: escucha `checkout.session.completed`, `customer.subscription.created/updated/deleted`, `invoice.paid`, `invoice.payment_failed`. Resuelve la suscripción, la **re-lee de Stripe** (fuente de verdad, idempotente ante eventos desordenados) e **ignora cualquier precio fuera de la lista blanca** antes de tocar la BD (cuenta Stripe compartida con Dental Cloud). Secret: `STRIPE_WEBHOOK_SECRET_MYVIPERS` (acepta `STRIPE_WEBHOOK_SECRET` por compatibilidad).
+- **Portal**: `POST /api/stripe/portal` (cambiar tarjeta, facturas, cancelar).
+- **Estado**: `GET /api/admin/billing` con los **precios reales de Stripe** para la región del negocio (no se hardcodean importes).
+- **UI**: `BillingCard` en la pestaña **Config** del panel del dueño (solo rol `admin`). Al volver de Stripe (`?checkout=ok|cancel`) o del portal (`?tab=config`) abre esa pestaña y refresca el estado.
+
+## 3. Decisiones
+
+- **Se mantiene el esquema de la 012** en vez de las columnas del PRP: `subscription_status` (estado nativo de Stripe; `NULL` = gratis) cubre `billing_status`, y `plan_lookup_key` identifica el plan mejor que un `price_id`. No se duplican columnas. La columna previa `restaurants.plan` ('free') no la usa ningún código y no se toca.
+- **Cancelación** → queda `canceled` (sin acceso diferenciado: el enforcement por plan está fuera de alcance, así que hoy equivale a gratis). El panel ofrece volver a suscribirse.
+- `incomplete` (checkout sin terminar) se muestra como gratis.
+
+## 4. Go-live (pasos, en orden)
+
+1. **Stripe (modo Test primero)**: comprobar que los precios tienen los `lookup_key` `myvipers_{mensual|anual}_{eur|latam|pen}` (los PEN son opcionales: sin ellos Perú paga LATAM). Limpiar precios duplicados.
+2. **Stripe → Webhooks → Add endpoint**: `https://myvipers.es/api/stripe/webhook`, solo los 6 eventos de arriba. No tocar el endpoint de Verioska.
+3. **Stripe → Billing Portal**: activar y guardar la configuración (sin ella `billingPortal.sessions.create` falla).
+4. **Vercel `mvipers` → env (Production)**: `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET_MYVIPERS` (los pega Misael en el panel).
+5. **Neon prod**: aplicar `012-stripe-billing.sql` (ya validada en la rama `staging-billing-012`).
+6. **Deploy** de `stripe-billing` a `mvipers`.
+7. **Prueba en Test**: suscribir con `4242 4242 4242 4242` → `active`; cancelar en el portal → `canceled`; comprobar que un evento de Dental Cloud se ignora (`ignored: 'precio ajeno a MyVipers'`).
+8. Repetir 1–4 en **Live**.
+
+## 5. Criterios de aceptación
+
+- [x] Verificado si existía pantalla de facturación → no existía; creada.
+- [x] Migración validada en staging (`staging-billing-012`) · [ ] aplicada en prod.
+- [x] Checkout con metadata correcta y región decidida en servidor.
+- [ ] Segundo webhook registrado en Stripe (paso manual).
+- [ ] Probado en modo Test (suscribir → `active`, cancelar → `canceled`).
+- [x] Webhook ignora precios fuera de la lista blanca (tests).
+- [x] El panel muestra el estado de facturación.
+
+## 6. Fuera de alcance
+
+Enforcement de límites por plan · IVA/fiscalidad · agente de ventas de MyVipers.
+Aparte (no tocado): `POST /api/onboarding/apply` devuelve **500** con cuerpo vacío en prod (debería ser 400).
