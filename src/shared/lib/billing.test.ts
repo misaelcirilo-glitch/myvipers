@@ -3,6 +3,8 @@ import {
     billingStateFromStatus,
     hasLiveSubscription,
     isMyvipersLookupKey,
+    isTrialEligible,
+    TRIAL_DAYS,
     planLookupKey,
     regionForCountry,
     subscriptionIdFromCheckoutSession,
@@ -87,4 +89,13 @@ describe('extracción del id de suscripción de los eventos', () => {
         expect(subscriptionIdFromCheckoutSession({ mode: 'subscription', subscription: 'sub_1' })).toBe('sub_1');
         expect(subscriptionIdFromCheckoutSession({ mode: 'payment', subscription: null })).toBeNull();
     });
+});
+
+describe('prueba gratis', () => {
+    test('30 días', () => expect(TRIAL_DAYS).toBe(30));
+    test('primera suscripción → con prueba', () => {
+        expect(isTrialEligible(null)).toBe(true);
+        expect(isTrialEligible(undefined)).toBe(true);
+    });
+    test('ya tuvo suscripción (aunque cancelada) → sin prueba', () => expect(isTrialEligible('sub_123')).toBe(false));
 });

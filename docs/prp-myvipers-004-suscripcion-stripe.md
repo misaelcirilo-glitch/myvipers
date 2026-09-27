@@ -29,6 +29,8 @@ Producción (myvipers.es) ya corre el código de `stripe-billing` (desplegado po
 
 ## 3. Decisiones
 
+- **Prueba gratis de 30 días** (2026-09-27, pedido de Misael): `trial_period_days` en el checkout **solo en la primera suscripción** del negocio (`isTrialEligible`: sin `stripe_subscription_id` previo). Se pide tarjeta y se cobra al terminar. El panel lo anuncia y muestra "Prueba gratis hasta" en estado `trialing`.
+
 - **Se mantiene el esquema de la 012** en vez de las columnas del PRP: `subscription_status` (estado nativo de Stripe; `NULL` = gratis) cubre `billing_status`, y `plan_lookup_key` identifica el plan mejor que un `price_id`. No se duplican columnas. La columna previa `restaurants.plan` ('free') no la usa ningún código y no se toca.
 - **Cancelación** → queda `canceled` (sin acceso diferenciado: el enforcement por plan está fuera de alcance, así que hoy equivale a gratis). El panel ofrece volver a suscribirse.
 - `incomplete` (checkout sin terminar) se muestra como gratis.

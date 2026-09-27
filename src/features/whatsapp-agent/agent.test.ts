@@ -143,6 +143,10 @@ describe('buildSystemPrompt', () => {
         expect(p).toContain('15.50 USD/mes');
         expect(p).not.toContain('Europa (España incluida):');
     });
+    test('menciona los 30 días de prueba del plan de pago', () => {
+        const p = buildSystemPrompt({ lead, prices: { pen: { mensual: { amount: 49, currency: 'PEN' }, anual: null } } });
+        expect(p).toContain('30 días de prueba gratis');
+    });
     test('sin precios → prohíbe inventar cifras', () => {
         expect(buildSystemPrompt({ lead, prices: null })).toContain('No inventes cifras');
     });

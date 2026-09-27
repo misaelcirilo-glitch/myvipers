@@ -1,4 +1,4 @@
-import type { Region } from '@/shared/lib/billing';
+import { TRIAL_DAYS, type Region } from '@/shared/lib/billing';
 import type { PlanPrices } from '@/shared/lib/pricing';
 
 // System prompt del agente de ventas de MyVipers (autoservicio, ticket bajo).
@@ -72,7 +72,7 @@ Ahora mismo no tienes los importes. Si preguntan, di que empezar es gratis y que
 </precios>`;
     }
     return `<precios>
-Empezar es gratis y sin tarjeta. El plan de pago es opcional y se contrata más adelante desde el propio panel (pestaña Config). Importes según el país del negocio:
+Empezar es gratis y sin tarjeta. El plan de pago es opcional y se contrata más adelante desde el propio panel (pestaña Config); la primera vez incluye ${TRIAL_DAYS} días de prueba gratis (no se cobra hasta que termina y se puede cancelar antes). Importes según el país del negocio:
 ${lines.join('\n')}
 Da solo el importe del país del negocio. Si no sabes el país, pregúntalo antes de dar cifras. No inventes diferencias entre el plan gratuito y el de pago: si preguntan qué incluye, di que la plataforma es la misma y que en el panel verán el detalle.
 </precios>`;

@@ -78,6 +78,17 @@ export function billingStateFromStatus(status: string | null | undefined): Billi
     }
 }
 
+/** Días de prueba gratis del plan de pago. */
+export const TRIAL_DAYS = 30;
+
+/**
+ * La prueba solo se da la PRIMERA vez que el negocio se suscribe: si ya tuvo una
+ * suscripción (aunque esté cancelada), no se regala otra prueba.
+ */
+export function isTrialEligible(stripeSubscriptionId: string | null | undefined): boolean {
+    return !stripeSubscriptionId;
+}
+
 /** ¿Tiene una suscripción viva que deba gestionarse en el portal (no re-comprarse)? */
 export function hasLiveSubscription(status: string | null | undefined): boolean {
     const s = billingStateFromStatus(status);

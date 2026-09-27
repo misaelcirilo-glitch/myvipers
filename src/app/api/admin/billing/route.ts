@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/shared/lib/auth';
 import { db } from '@/shared/lib/db';
-import { billingStateFromStatus, regionForCountry } from '@/shared/lib/billing';
+import { billingStateFromStatus, isTrialEligible, regionForCountry, TRIAL_DAYS } from '@/shared/lib/billing';
 import { getPlanPrices, type PlanPrices } from '@/shared/lib/pricing';
 
 // Estado de facturación del negocio para el panel del dueño, con los precios
@@ -14,7 +14,7 @@ export async function GET() {
 
     const rows = await db`
         SELECT country, subscription_status, plan_lookup_key,
-               subscription_current_period_end, stripe_customer_id
+               subscription_current_period_end, stripe_customer_id, stripe_subscription_id
         FROM restaurants WHERE id = ${session.restaurantId} LIMIT 1
     `;
     const r = rows[0];
@@ -41,5 +41,7 @@ export async function GET() {
         hasCustomer: !!r.stripe_customer_id,
         paymentsEnabled,
         prices,
+        // Días de prueba que tendría al suscribirse ahora (0 si ya la disfrutó).
+        trialDays: isTrialEligible(r.stripe_subscription_id as string | null) ? TRIAL_DAYS : 0,
     });
 }

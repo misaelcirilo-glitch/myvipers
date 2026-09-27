@@ -12,6 +12,7 @@ interface BillingInfo {
     currentPeriodEnd: string | null;
     paymentsEnabled: boolean;
     prices: Record<Billing, PriceInfo>;
+    trialDays: number;
 }
 
 const STATE_LABEL: Record<BillingState, { text: string; cls: string }> = {
@@ -109,7 +110,7 @@ export function BillingCard({ checkoutResult }: { checkoutResult?: 'ok' | 'cance
             {checkoutResult === 'ok' && !isLive && (
                 <p className="text-xs text-green-300 bg-green-500/10 border border-green-500/20 rounded-xl p-3 flex gap-2">
                     <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-                    ¡Pago recibido! Tu suscripción se activará en unos segundos.
+                    ¡Listo! Tu suscripción se activará en unos segundos.
                 </p>
             )}
             {checkoutResult === 'cancel' && !isLive && (
@@ -125,7 +126,7 @@ export function BillingCard({ checkoutResult }: { checkoutResult?: 'ok' | 'cance
                             <p>Plan: <span className="text-white font-semibold">{periodFromKey(info.planLookupKey)}</span></p>
                         )}
                         {renew && (
-                            <p>{info.state === 'past_due' ? 'Periodo hasta' : 'Se renueva el'}: <span className="text-white font-semibold">{renew}</span></p>
+                            <p>{info.state === 'past_due' ? 'Periodo hasta' : info.state === 'trialing' ? 'Prueba gratis hasta' : 'Se renueva el'}: <span className="text-white font-semibold">{renew}</span></p>
                         )}
                     </div>
                     {info.state === 'past_due' && (
@@ -154,6 +155,11 @@ export function BillingCard({ checkoutResult }: { checkoutResult?: 'ok' | 'cance
                             ? 'Tu suscripción terminó. Vuelve a activarla cuando quieras.'
                             : 'Activa tu suscripción para seguir haciendo crecer tu negocio con MyVipers.'}
                     </p>
+                    {info.trialDays > 0 && (
+                        <p className="text-xs text-blue-300 bg-blue-500/10 border border-blue-500/20 rounded-xl p-3">
+                            Los primeros {info.trialDays} días son gratis. No se cobra nada hasta que termine la prueba y puedes cancelar antes.
+                        </p>
+                    )}
                     <div className="grid grid-cols-2 gap-3">
                         {(['mensual', 'anual'] as const).map((b) => (
                             <button

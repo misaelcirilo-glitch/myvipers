@@ -1,6 +1,6 @@
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
-import { hasLiveSubscription } from '@/shared/lib/billing';
+import { hasLiveSubscription, isTrialEligible, TRIAL_DAYS } from '@/shared/lib/billing';
 import { getStripe, planLookupKey, regionForCountry } from '@/shared/lib/stripe';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
     // Tenant (restaurants) — customer de Stripe se guarda aquí.
     const rows = await db`
-        SELECT id, name, email, country, stripe_customer_id, subscription_status
+        SELECT id, name, email, country, stripe_customer_id, stripe_subscription_id, subscription_status
         FROM restaurants WHERE id = ${session.restaurantId} LIMIT 1
     `;
     const tenant = rows[0];
@@ -96,6 +96,9 @@ export async function POST(request: Request) {
         metadata: { restaurant_id: session.restaurantId, plan_lookup_key: lookupKey, product: 'myvipers' },
         subscription_data: {
             metadata: { restaurant_id: session.restaurantId, plan_lookup_key: lookupKey, product: 'myvipers' },
+            // 30 días gratis solo en la primera suscripción del negocio. Se pide la
+            // tarjeta igualmente: al acabar la prueba se cobra sin más pasos.
+            ...(isTrialEligible(tenant.stripe_subscription_id as string | null) ? { trial_period_days: TRIAL_DAYS } : {}),
         },
         success_url: `${origin}/admin?checkout=ok`,
         cancel_url: `${origin}/admin?checkout=cancel`,
