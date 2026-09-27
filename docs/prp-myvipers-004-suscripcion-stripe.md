@@ -1,6 +1,6 @@
 # PRP-myvipers-004 — Suscripción de pago (activación automática vía Stripe)
 
-**Estado:** DESPLEGADO (2026-09-27): 012 aplicada en prod (backup `backup-pre-012`), `stripe-billing` pusheada y desplegada `--prod` a mvipers (myvipers.es) y el-machay. **Pendiente**: pasos de Stripe/Vercel (1–4) y prueba en modo Test.
+**Estado:** DESPLEGADO (2026-09-27): 012 aplicada en prod (backup `backup-pre-012`), `stripe-billing` pusheada y desplegada `--prod` a mvipers (myvipers.es) y el-machay. **Probado en modo Test (2026-09-27)** con Tienda Demo: suscribir → `active` (customer, subscription, lookup_key y periodo guardados) y cancelar inmediato → `canceled`. **Pendiente**: precio `myvipers_anual_latam` en Test y repetir la configuración en **Live**.
 **Owner:** Misael
 
 ## 1. Punto de partida real (verificado 2026-09-27)
@@ -49,12 +49,14 @@ Producción (myvipers.es) ya corre el código de `stripe-billing` (desplegado po
 - [x] Verificado si existía pantalla de facturación → no existía; creada.
 - [x] Migración validada en staging (`staging-billing-012`) · [x] aplicada en prod (2026-09-27).
 - [x] Checkout con metadata correcta y región decidida en servidor.
-- [ ] Segundo webhook registrado en Stripe (paso manual).
-- [ ] Probado en modo Test (suscribir → `active`, cancelar → `canceled`).
+- [x] Segundo webhook registrado en Stripe (modo Test).
+- [x] Probado en modo Test (suscribir → `active`, cancelar → `canceled`) — 2026-09-27.
+- [ ] Configuración repetida en Live (precios con lookup_key, webhook, portal, env).
 - [x] Webhook ignora precios fuera de la lista blanca (tests).
 - [x] El panel muestra el estado de facturación.
 
 ## 6. Fuera de alcance
 
 Enforcement de límites por plan · IVA/fiscalidad · agente de ventas de MyVipers.
+Nota: el portal cancela **al final del periodo**; el panel no avisa de la cancelación programada (`cancel_at_period_end`) hasta que Stripe envía `deleted`.
 Aparte (no tocado): `POST /api/onboarding/apply` devuelve **500** con cuerpo vacío en prod (debería ser 400).
