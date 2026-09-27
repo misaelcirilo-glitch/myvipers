@@ -1,6 +1,6 @@
 # PRP-myvipers-004 — Suscripción de pago (activación automática vía Stripe)
 
-**Estado:** Código listo en rama `stripe-billing` · migración validada en staging · **pendiente**: configurar Stripe/Vercel, aplicar 012 en prod, deploy y prueba en modo Test.
+**Estado:** DESPLEGADO (2026-09-27): 012 aplicada en prod (backup `backup-pre-012`), `stripe-billing` pusheada y desplegada `--prod` a mvipers (myvipers.es) y el-machay. **Pendiente**: pasos de Stripe/Vercel (1–4) y prueba en modo Test.
 **Owner:** Misael
 
 ## 1. Punto de partida real (verificado 2026-09-27)
@@ -39,15 +39,15 @@ Producción (myvipers.es) ya corre el código de `stripe-billing` (desplegado po
 2. **Stripe → Webhooks → Add endpoint**: `https://myvipers.es/api/stripe/webhook`, solo los 6 eventos de arriba. No tocar el endpoint de Verioska.
 3. **Stripe → Billing Portal**: activar y guardar la configuración (sin ella `billingPortal.sessions.create` falla).
 4. **Vercel `mvipers` → env (Production)**: `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET_MYVIPERS` (los pega Misael en el panel).
-5. **Neon prod**: aplicar `012-stripe-billing.sql` (ya validada en la rama `staging-billing-012`).
-6. **Deploy** de `stripe-billing` a `mvipers`.
+5. ~~**Neon prod**: aplicar `012`~~ ✅ hecho 2026-09-27.
+6. ~~**Deploy**~~ ✅ hecho 2026-09-27 (mvipers + el-machay). Tras poner las env de Stripe en Vercel hay que **redesplegar mvipers** para que las tome.
 7. **Prueba en Test**: suscribir con `4242 4242 4242 4242` → `active`; cancelar en el portal → `canceled`; comprobar que un evento de Dental Cloud se ignora (`ignored: 'precio ajeno a MyVipers'`).
 8. Repetir 1–4 en **Live**.
 
 ## 5. Criterios de aceptación
 
 - [x] Verificado si existía pantalla de facturación → no existía; creada.
-- [x] Migración validada en staging (`staging-billing-012`) · [ ] aplicada en prod.
+- [x] Migración validada en staging (`staging-billing-012`) · [x] aplicada en prod (2026-09-27).
 - [x] Checkout con metadata correcta y región decidida en servidor.
 - [ ] Segundo webhook registrado en Stripe (paso manual).
 - [ ] Probado en modo Test (suscribir → `active`, cancelar → `canceled`).
