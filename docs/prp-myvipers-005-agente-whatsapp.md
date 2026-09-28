@@ -1,6 +1,6 @@
 # PRP-myvipers-005 — Agente de ventas por WhatsApp (autoservicio, ticket bajo)
 
-**Estado:** CÓDIGO LISTO (2026-09-27), commit local en `stripe-billing`. Migración `014` validada en la rama Neon `staging-wa-agent-014`; **sin aplicar en prod ni desplegar**. Falta el alta en Meta (pasos de Misael, §6).
+**Estado:** DESPLEGADO INERTE (2026-09-28): `014` aplicada en Neon prod (backup `backup-pre-014`), desplegado a mvipers y el-machay; el webhook responde 503 "Webhook no configurado" hasta poner las env `MV_WA_*`. Falta el alta en Meta (pasos de Misael, §6).
 **Owner:** Misael · **Depende de:** PRP-myvipers-004 (Stripe en Live) ✅
 
 ## 1. Objetivo
@@ -63,7 +63,7 @@ Ver leads: `SELECT wa_phone_e164, profile_name, business_type, country, source, 
 
 1. **Meta for Developers** (mismo Business Manager): crear app **"MyVipers Sales Agent"** (tipo Business) → añadir producto WhatsApp → WABA nueva de MyVipers → dar de alta y verificar el **número nuevo** (no el de Verioska).
 2. Usuario del sistema con token permanente (`whatsapp_business_messaging`, `whatsapp_business_management`) asignado a la app y la WABA.
-3. Vercel `mvipers`: las env de §4 → **aplicar 014 en Neon prod** (con rama de backup) → **redesplegar**.
+3. Vercel `mvipers`: las env de §4 → **redesplegar** (la 014 ya está en prod desde 2026-09-28).
 4. Meta → WhatsApp → Configuración → Webhook: URL `https://myvipers.es/api/whatsapp/webhook`, token = `MV_WA_VERIFY_TOKEN` → Verificar → suscribir el campo **`messages`**.
 5. Plantilla de contacto en frío (categoría Marketing) con los dos botones → esperar aprobación.
 6. Pruebas (§7).
