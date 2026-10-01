@@ -2,13 +2,14 @@ import { z } from 'zod';
 import { SIGNUP_RESTAURANT_URL, SIGNUP_RETAIL_URL } from './prompt';
 
 export const AGENT_MODEL = 'claude-sonnet-5';
-const MAX_TOKENS = 800;
+const MAX_TOKENS = 2000;
 const TIMEOUT_MS = 25_000;
 
 export type ChatTurn = { role: 'user' | 'assistant'; content: string };
 
 // Solo `reply` es obligatorio: un campo secundario mal formado se descarta
 // (nunca debe acabar enviándose el JSON crudo al lead).
+// "unknown" / "" son los valores "sin dato" del esquema estructurado (OUTPUT_SCHEMA).
 const AgentReplySchema = z.object({
     reply: z.string().min(1),
     business_type: z.enum(['restaurant', 'retail']).nullable().optional().catch(null),
@@ -16,6 +17,21 @@ const AgentReplySchema = z.object({
     status: z.enum(['qualifying', 'directed_to_signup', 'not_interested']).optional().catch(undefined),
     wants_human: z.boolean().optional().catch(false),
 });
+
+// Salida estructurada impuesta por la API: sin ella, en conversaciones largas
+// el modelo acababa respondiendo texto plano y el lead no se actualizaba.
+const OUTPUT_SCHEMA = {
+    type: 'object',
+    properties: {
+        reply: { type: 'string' },
+        business_type: { type: 'string', enum: ['restaurant', 'retail', 'unknown'] },
+        country: { type: 'string' },
+        status: { type: 'string', enum: ['qualifying', 'directed_to_signup', 'not_interested'] },
+        wants_human: { type: 'boolean' },
+    },
+    required: ['reply', 'business_type', 'country', 'status', 'wants_human'],
+    additionalProperties: false,
+} as const;
 
 export type AgentReply = {
     reply: string;
@@ -88,14 +104,25 @@ export async function callAgentModel(system: string, history: ChatTurn[]): Promi
     const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-        body: JSON.stringify({ model: AGENT_MODEL, max_tokens: MAX_TOKENS, system, messages: normalizeHistory(history) }),
+        body: JSON.stringify({
+            model: AGENT_MODEL,
+            max_tokens: MAX_TOKENS,
+            system,
+            messages: normalizeHistory(history),
+            // Chat de WhatsApp: esfuerzo bajo = respuestas rápidas y sin gastar el tope en razonar.
+            output_config: { effort: 'low', format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
+        }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) {
         const body = await res.text().catch(() => '');
         throw new Error(`Anthropic ${res.status}: ${body.slice(0, 300)}`);
     }
-    const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+    const data = (await res.json()) as { stop_reason?: string; content?: { type: string; text?: string }[] };
+    // JSON cortado o rechazo → respuesta de reserva (nunca enviar JSON a medias).
+    if (data.stop_reason === 'max_tokens' || data.stop_reason === 'refusal') {
+        throw new Error(`Anthropic stop_reason=${data.stop_reason}`);
+    }
     const text = (data.content ?? []).filter((b) => b.type === 'text').map((b) => b.text ?? '').join('');
     if (!text.trim()) throw new Error('Anthropic devolvió una respuesta vacía');
     return parseAgentReply(text, AGENT_MODEL);

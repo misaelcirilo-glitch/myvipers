@@ -162,4 +162,17 @@ describe('buildSystemPrompt', () => {
         expect(p).toContain('Embudo de objeción');
         expect(p).not.toMatch(/mel[eé]ndez|ventas salvajes/i);
     });
+    test('caso real de El Machay como única cifra citable', () => {
+        const p = buildSystemPrompt({ lead, prices: null });
+        expect(p).toContain('El Machay');
+        expect(p).toContain('entre un 50% y un 100%');
+    });
+});
+
+describe('parseAgentReply con salida estructurada', () => {
+    test('"unknown" y "" se tratan como sin dato', () => {
+        const r = parseAgentReply('{"reply":"Hola","business_type":"unknown","country":"","status":"qualifying","wants_human":false}', 'm');
+        expect(r.businessType).toBeNull();
+        expect(r.country).toBeNull();
+    });
 });
