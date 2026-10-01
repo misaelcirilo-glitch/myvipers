@@ -156,4 +156,10 @@ describe('buildSystemPrompt', () => {
         expect(p).toContain('<apertura_contacto_frio>');
         expect(p).toContain('Tienda Rosa, Lima');
     });
+    test('incluye el método de venta sin nombres de autores', () => {
+        const p = buildSystemPrompt({ lead, prices: null });
+        expect(p).toContain('<metodo_venta>');
+        expect(p).toContain('Embudo de objeción');
+        expect(p).not.toMatch(/mel[eé]ndez|ventas salvajes/i);
+    });
 });
