@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Search, Star, CalendarDays, Users, TrendingUp, Gift, Check, LogOut, Flame, Megaphone, Plus, Trash2, ToggleLeft, ToggleRight, UtensilsCrossed, Edit2, X, Upload, Loader2, UserPlus, Phone, Award, Image, Wallet, ArrowUpCircle, ArrowDownCircle, Sparkles, Bell, Receipt, Package } from 'lucide-react';
 import { BoletasTab } from '@/features/admin/BoletasTab';
 import { RetailTab } from '@/features/admin/RetailTab';
+import { BillingCard } from '@/features/admin/BillingCard';
 
 export default function AdminPage() {
     const { user, loading, logout } = useSession();
@@ -18,6 +19,7 @@ export default function AdminPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [searching, setSearching] = useState(false);
+    const [customerList, setCustomerList] = useState<any[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
     const [amount, setAmount] = useState('');
     const [assigning, setAssigning] = useState(false);
@@ -50,6 +52,24 @@ export default function AdminPage() {
     const [editingReward, setEditingReward] = useState<any>(null);
     const [logoUploading, setLogoUploading] = useState(false);
     const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
+    const [checkoutResult, setCheckoutResult] = useState<'ok' | 'cancel' | null>(null);
+
+    // Vuelta de Stripe Checkout (?checkout=ok|cancel) o del Billing Portal
+    // (?tab=config): abrir la pestaña Config, donde está la suscripción, y
+    // limpiar la URL para que un refresco no repita el aviso.
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const checkout = params.get('checkout');
+        if (checkout === 'ok' || checkout === 'cancel') {
+            setCheckoutResult(checkout);
+            setTab('config');
+        } else if (params.get('tab') === 'config') {
+            setTab('config');
+        }
+        if (checkout || params.get('tab')) {
+            window.history.replaceState(null, '', window.location.pathname);
+        }
+    }, []);
 
     useEffect(() => {
         if (loading) return;
@@ -349,6 +369,15 @@ export default function AdminPage() {
         return () => clearTimeout(t);
     }, [searchQuery]);
 
+    // Lista completa de clientes (tab "Clientes"). Se recarga al abrir el tab.
+    useEffect(() => {
+        if (tab !== 'clientes') return;
+        fetch('/api/admin/customers')
+            .then(r => r.json())
+            .then(d => setCustomerList(d.customers || []))
+            .catch(() => setCustomerList([]));
+    }, [tab]);
+
     const handleAssignPoints = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedCustomer) return;
@@ -409,23 +438,23 @@ export default function AdminPage() {
                 </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats — tarjetas clicables que llevan a su sección */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                <button type="button" onClick={() => setTab('reservations')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-blue-500/50 active:scale-95 transition">
                     <CalendarDays size={18} className="text-blue-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayReservations?.length || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Reservas hoy</p>
-                </div>
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                </button>
+                <button type="button" onClick={() => setTab('clientes')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-green-500/50 active:scale-95 transition">
                     <Users size={18} className="text-green-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.totalCustomers || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Clientes VIP</p>
-                </div>
-                <div className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center">
+                </button>
+                <button type="button" onClick={() => setTab('points')} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-3 text-center hover:border-amber-500/50 active:scale-95 transition">
                     <Star size={18} className="text-amber-400 mx-auto mb-1" />
                     <p className="text-xl font-black">{dashboard?.todayPoints || 0}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest font-bold">Puntos hoy</p>
-                </div>
+                </button>
             </div>
 
             {/* Assign Points Form */}
@@ -946,15 +975,33 @@ export default function AdminPage() {
 
                     {/* Lista de clientes */}
                     <div className="space-y-2">
-                        {(dashboard?.totalCustomers || 0) > 0 ? (
-                            <p className="text-sm text-slate-500 text-center py-4">
-                                {dashboard.totalCustomers} clientes VIP registrados.
-                                Busca uno en la sección "Asignar Puntos" de arriba.
-                            </p>
-                        ) : (
+                        {customerList.length === 0 ? (
                             <p className="text-sm text-slate-500 text-center py-6">
                                 Sin clientes aún. Registra el primero con el botón de arriba.
                             </p>
+                        ) : (
+                            <>
+                                <p className="text-[11px] text-slate-500 px-1">{customerList.length} clientes VIP · toca uno para asignarle puntos</p>
+                                {customerList.map(c => (
+                                    <button
+                                        key={c.id} type="button"
+                                        onClick={() => setSelectedCustomer(c)}
+                                        className="w-full flex items-center gap-3 bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl px-3 py-2.5 hover:border-amber-500/40 transition text-left"
+                                    >
+                                        <div className="w-9 h-9 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-400 font-black text-sm shrink-0">
+                                            {c.name?.[0]?.toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-white text-sm truncate">{c.name}</p>
+                                            <p className="text-[10px] text-slate-500 truncate">{c.phone} · {c.vip_level}</p>
+                                        </div>
+                                        <div className="text-right shrink-0">
+                                            <p className="text-amber-400 font-black text-sm">{c.available_points}</p>
+                                            <p className="text-[9px] text-slate-500 uppercase tracking-widest">pts</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </>
                         )}
                     </div>
                 </div>
@@ -1246,6 +1293,12 @@ export default function AdminPage() {
             {/* Config Tab - Logo */}
             {tab === 'config' && (
                 <div className="space-y-4">
+                    {user?.role === 'admin' && (
+                        <>
+                            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Suscripción</h3>
+                            <BillingCard checkoutResult={checkoutResult} />
+                        </>
+                    )}
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Logo del restaurante</h3>
                     <p className="text-[10px] text-slate-500">Este logo aparecerá como icono cuando los clientes agreguen tu restaurante a su móvil.</p>
 

@@ -67,7 +67,7 @@ export const en: Translations = {
         testimonial3Text: 'The referral program pays for itself. Each customer brings 2 more on average.',
         faqTitle: 'Frequently asked questions',
         faq1Q: 'How much does it cost?',
-        faq1A: 'Start free. No credit card. When you grow, plans start at 29€/month.',
+        faq1A: 'Start free, no credit card. When you want more, turn on the paid plan from your dashboard with a 30-day free trial. The price depends on your country and you see it before paying.',
         faq2Q: 'Do I need technical skills?',
         faq2A: 'No. If you know how to use WhatsApp, you know MyVipers. Setup in 5 minutes.',
         faq3Q: 'Do my customers need to download an app?',

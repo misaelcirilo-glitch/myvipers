@@ -10,7 +10,18 @@ export async function GET(req: Request) {
 
     const { searchParams } = new URL(req.url);
     const q = (searchParams.get('q') || '').trim();
-    if (q.length < 2) return NextResponse.json({ customers: [] });
+
+    // Sin búsqueda: lista completa del tenant (para el tab "Clientes"), por puntos desc.
+    if (q.length < 2) {
+        const customers = await db`
+            SELECT id, name, phone, available_points, total_points, vip_level
+            FROM users
+            WHERE role = 'customer' AND restaurant_id = ${session.restaurantId}
+            ORDER BY available_points DESC, name
+            LIMIT 200
+        `;
+        return NextResponse.json({ customers });
+    }
 
     const digits = q.replace(/\D/g, '');
     const term = `%${q}%`;
