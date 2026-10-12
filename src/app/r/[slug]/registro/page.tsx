@@ -23,7 +23,8 @@ export default function RestaurantRegistroPage({ params }: { params: Promise<{ s
             if (!res.ok) throw new Error(data.error);
             // Navegación dura: el SessionProvider (layout raíz) solo lee la cookie
             // al montar; con router.push /carta rebotaría al login.
-            window.location.href = '/carta';
+            // Retail no tiene carta de restaurante → a puntos (igual que el login).
+            window.location.href = data.user?.businessType === 'retail' ? '/puntos' : '/carta';
         } catch (err: any) {
             setError(err.message);
         } finally { setLoading(false); }
@@ -32,7 +33,7 @@ export default function RestaurantRegistroPage({ params }: { params: Promise<{ s
     return (
         <div className="min-h-screen bg-[#0f0f1a] flex flex-col px-6 py-8">
             <Link href={`/r/${slug}`} className="flex items-center gap-2 text-slate-400 text-sm mb-8 hover:text-white">
-                <ArrowLeft size={16} /> Volver a la carta
+                <ArrowLeft size={16} /> Volver
             </Link>
             <div className="max-w-sm mx-auto w-full">
                 <div className="flex items-center gap-2 mb-2">

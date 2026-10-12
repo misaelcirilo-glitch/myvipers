@@ -23,7 +23,7 @@ export async function POST(req: Request) {
         if (restaurantSlug) {
             result = await db`
                 SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
-                       u.restaurant_id, r.slug as restaurant_slug
+                       u.restaurant_id, r.slug as restaurant_slug, r.business_type
                 FROM users u
                 JOIN restaurants r ON r.id = u.restaurant_id
                 WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}
@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         } else {
             result = await db`
                 SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
-                       u.restaurant_id, r.slug as restaurant_slug
+                       u.restaurant_id, r.slug as restaurant_slug, r.business_type
                 FROM users u
                 LEFT JOIN restaurants r ON r.id = u.restaurant_id
                 WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
             user: {
                 id: user.id, name: user.name, phone: user.phone, role: user.role,
                 vipLevel: user.vip_level, points: user.available_points,
-                restaurantSlug: user.restaurant_slug,
+                restaurantSlug: user.restaurant_slug, businessType: user.business_type || 'restaurant',
             }
         });
     } catch (error: any) {

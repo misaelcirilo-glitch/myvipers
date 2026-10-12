@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Star, UtensilsCrossed, CalendarDays, Loader2, Phone, MapPin, Zap, Tag } from 'lucide-react';
+import { Star, Loader2, Phone, MapPin, Zap, Tag, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 
 interface Restaurant {
@@ -19,12 +19,25 @@ interface Promotion {
     discount_type: 'percentage' | 'fixed' | 'free_item' | 'points_multiplier' | null;
     discount_value: number | null; valid_until: string | null;
 }
+interface RetailCategory { id: string; name: string; parent_id: string | null; }
+interface RetailProduct {
+    id: string; name: string; description: string | null; brand: string | null;
+    category_id: string | null; base_price: number; discount_price: number | null;
+    image_url: string | null; inStock: boolean; variants: { size: string | null; color: string | null }[];
+}
 
-export default function RestaurantPublicPage({ params }: { params: Promise<{ slug: string }> }) {
+// Vertical del tenant: no se asume de antemano. Se resuelve vía `/api/public-tenant`
+// antes de pedir el catálogo, para no renderizar nunca la carta de restaurante a un
+// tenant retail (ni viceversa). Si esa llamada falla, se conserva el comportamiento
+// histórico (menú de restaurante) para no romper tenants existentes.
+export default function TenantPublicPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
+    const [businessType, setBusinessType] = useState<string | null>(null);
     const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
     const [categories, setCategories] = useState<Category[]>([]);
     const [items, setItems] = useState<MenuItem[]>([]);
+    const [retailCategories, setRetailCategories] = useState<RetailCategory[]>([]);
+    const [retailProducts, setRetailProducts] = useState<RetailProduct[]>([]);
     const [promotions, setPromotions] = useState<Promotion[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(false);
@@ -32,21 +45,49 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
     const [search, setSearch] = useState('');
 
     useEffect(() => {
-        fetch(`/api/menu?slug=${slug}`)
+        fetch(`/api/public-tenant?slug=${slug}`)
             .then(r => { if (!r.ok) throw new Error(); return r.json(); })
             .then(data => {
-                setRestaurant(data.restaurant || { name: slug, slug });
-                setCategories(data.menu?.map((c: any) => ({ id: c.id, name: c.name, icon: c.icon })) || []);
-                const allItems: MenuItem[] = [];
-                (data.menu || []).forEach((c: any) => {
-                    (c.items || []).forEach((item: any) => {
-                        allItems.push({ ...item, category_name: c.name });
+                setRestaurant(data.restaurant);
+                setBusinessType(data.businessType || 'restaurant');
+                if (data.businessType === 'retail') {
+                    return fetch(`/api/retail-catalog?slug=${slug}`)
+                        .then(r => r.ok ? r.json() : { categories: [], products: [] })
+                        .then(cat => {
+                            setRetailCategories(cat.categories || []);
+                            setRetailProducts(cat.products || []);
+                            if (cat.categories?.length > 0) setActiveCategory(cat.categories[0].id);
+                        });
+                }
+                return fetch(`/api/menu?slug=${slug}`)
+                    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+                    .then(menuData => {
+                        setCategories(menuData.menu?.map((c: any) => ({ id: c.id, name: c.name, icon: c.icon })) || []);
+                        const allItems: MenuItem[] = [];
+                        (menuData.menu || []).forEach((c: any) => {
+                            (c.items || []).forEach((item: any) => allItems.push({ ...item, category_name: c.name }));
+                        });
+                        setItems(allItems);
+                        if (menuData.menu?.length > 0) setActiveCategory(menuData.menu[0].id);
                     });
-                });
-                setItems(allItems);
-                if (data.menu?.length > 0) setActiveCategory(data.menu[0].id);
             })
-            .catch(() => setError(true))
+            .catch(() => {
+                // Fallback retrocompatible: comportamiento histórico (menú de restaurante).
+                setBusinessType('restaurant');
+                return fetch(`/api/menu?slug=${slug}`)
+                    .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+                    .then(data => {
+                        setRestaurant(data.restaurant || { name: slug, slug });
+                        setCategories(data.menu?.map((c: any) => ({ id: c.id, name: c.name, icon: c.icon })) || []);
+                        const allItems: MenuItem[] = [];
+                        (data.menu || []).forEach((c: any) => {
+                            (c.items || []).forEach((item: any) => allItems.push({ ...item, category_name: c.name }));
+                        });
+                        setItems(allItems);
+                        if (data.menu?.length > 0) setActiveCategory(data.menu[0].id);
+                    })
+                    .catch(() => setError(true));
+            })
             .finally(() => setLoading(false));
 
         fetch(`/api/promotions?slug=${slug}`)
@@ -61,8 +102,8 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
         return (
             <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center p-6 text-center">
                 <div>
-                    <p className="text-4xl mb-4">🍽️</p>
-                    <h1 className="text-xl font-bold text-white mb-2">Restaurante no encontrado</h1>
+                    <p className="text-4xl mb-4">🔎</p>
+                    <h1 className="text-xl font-bold text-white mb-2">Negocio no encontrado</h1>
                     <p className="text-sm text-slate-500">El enlace puede estar incorrecto.</p>
                     <Link href="/" className="mt-4 inline-block text-emerald-400 text-sm font-bold hover:underline">Volver a MyVipers</Link>
                 </div>
@@ -70,7 +111,15 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
         );
     }
 
-    const filtered = items.filter(i => {
+    const isRetail = businessType === 'retail';
+
+    const filteredRetail = retailProducts.filter(p => {
+        const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+        const matchCat = !activeCategory || p.category_id === activeCategory;
+        return matchSearch && matchCat;
+    });
+
+    const filteredMenu = items.filter(i => {
         const matchSearch = !search || i.name.toLowerCase().includes(search.toLowerCase());
         const matchCat = !activeCategory || categories.find(c => c.id === activeCategory)?.name === i.category_name;
         return matchSearch && matchCat;
@@ -107,14 +156,14 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
                     {/* Search */}
                     <input
                         type="text" value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Buscar en la carta..."
+                        placeholder={isRetail ? 'Buscar productos...' : 'Buscar en la carta...'}
                         className="w-full mt-3 px-4 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 outline-none focus:border-emerald-500"
                     />
 
                     {/* Category pills */}
-                    {categories.length > 0 && (
+                    {(isRetail ? retailCategories : categories).length > 0 && (
                         <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4">
-                            {categories.map(c => (
+                            {(isRetail ? retailCategories : categories).map((c: any) => (
                                 <button key={c.id} onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                                         activeCategory === c.id ? 'bg-emerald-500 text-white' : 'bg-[#1a1a2e] border border-white/10 text-slate-400'
@@ -167,24 +216,35 @@ export default function RestaurantPublicPage({ params }: { params: Promise<{ slu
                     </div>
                 )}
 
-                {/* Featured */}
-                {featured.length > 0 && !search && !activeCategory && (
-                    <div>
-                        <h2 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
-                            <Star size={16} className="text-amber-400" /> Destacados
-                        </h2>
+                {isRetail ? (
+                    <>
                         <div className="space-y-2">
-                            {featured.map(item => <MenuCard key={item.id} item={item} />)}
+                            {filteredRetail.map(p => <ProductCard key={p.id} product={p} />)}
                         </div>
-                    </div>
+                        {filteredRetail.length === 0 && <p className="text-center py-8 text-sm text-slate-500">No se encontraron productos</p>}
+                    </>
+                ) : (
+                    <>
+                        {/* Featured */}
+                        {featured.length > 0 && !search && !activeCategory && (
+                            <div>
+                                <h2 className="flex items-center gap-2 text-sm font-bold text-white mb-3">
+                                    <Star size={16} className="text-amber-400" /> Destacados
+                                </h2>
+                                <div className="space-y-2">
+                                    {featured.map(item => <MenuCard key={item.id} item={item} />)}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Items */}
+                        <div className="space-y-2">
+                            {filteredMenu.map(item => <MenuCard key={item.id} item={item} />)}
+                        </div>
+
+                        {filteredMenu.length === 0 && <p className="text-center py-8 text-sm text-slate-500">No se encontraron platos</p>}
+                    </>
                 )}
-
-                {/* Items */}
-                <div className="space-y-2">
-                    {filtered.map(item => <MenuCard key={item.id} item={item} />)}
-                </div>
-
-                {filtered.length === 0 && <p className="text-center py-8 text-sm text-slate-500">No se encontraron platos</p>}
             </div>
 
             {/* Bottom CTA */}
@@ -229,6 +289,47 @@ function MenuCard({ item }: { item: MenuItem }) {
                         </div>
                     </div>
                     <p className="text-lg font-black text-emerald-400 mt-1">S/{Number(item.price).toFixed(2)}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProductCard({ product }: { product: RetailProduct }) {
+    const sizes = Array.from(new Set(product.variants.map(v => v.size).filter(Boolean))) as string[];
+    const colors = Array.from(new Set(product.variants.map(v => v.color).filter(Boolean))) as string[];
+    const hasDiscount = product.discount_price != null && product.discount_price < product.base_price;
+
+    return (
+        <div className={`bg-[#1a1a2e] border rounded-2xl overflow-hidden ${!product.inStock ? 'opacity-60' : 'border-white/5'}`}>
+            <div className="p-4 flex gap-3">
+                {product.image_url ? (
+                    <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
+                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+                    </div>
+                ) : (
+                    <div className="w-20 h-20 rounded-xl shrink-0 bg-[#0f0f1a] border border-white/5 flex items-center justify-center text-slate-600">
+                        <ShoppingBag size={24} />
+                    </div>
+                )}
+                <div className="flex-1 flex flex-col justify-between min-w-0">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-white text-sm">{product.name}</h3>
+                            {!product.inStock && <span className="text-[9px] text-red-400 bg-red-400/10 px-1.5 py-0.5 rounded-full font-bold">Agotado</span>}
+                        </div>
+                        {product.brand && <p className="text-[10px] text-slate-500">{product.brand}</p>}
+                        {(sizes.length > 0 || colors.length > 0) && (
+                            <div className="flex gap-1 mt-1 flex-wrap">
+                                {sizes.map(s => <span key={s} className="text-[9px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded-full">{s}</span>)}
+                                {colors.map(c => <span key={c} className="text-[9px] text-slate-400 bg-white/5 px-1.5 py-0.5 rounded-full">{c}</span>)}
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                        {hasDiscount && <p className="text-xs text-slate-500 line-through">S/{Number(product.base_price).toFixed(2)}</p>}
+                        <p className="text-lg font-black text-emerald-400">S/{Number(hasDiscount ? product.discount_price : product.base_price).toFixed(2)}</p>
+                    </div>
                 </div>
             </div>
         </div>

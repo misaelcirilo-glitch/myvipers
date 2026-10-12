@@ -26,7 +26,8 @@ export default function LoginPage() {
             // raíz y solo lee la cookie al montar, así que una navegación cliente
             // llega con user=null y el guard de destino rebota otra vez al login.
             const isStaff = data.user.role === 'admin' || data.user.role === 'waiter';
-            window.location.href = isStaff ? '/admin' : '/carta';
+            // Clientes de un tenant retail no tienen carta de restaurante → a puntos.
+            window.location.href = isStaff ? '/admin' : (data.user.businessType === 'retail' ? '/puntos' : '/carta');
         } catch (err: any) {
             setError(err.message);
         } finally {

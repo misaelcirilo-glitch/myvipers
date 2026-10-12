@@ -25,9 +25,9 @@ export async function POST(req: Request) {
         // Verificar restaurante (fallback al primero si no viene slug)
         let restaurant;
         if (restaurantSlug) {
-            restaurant = await db`SELECT id, slug, name FROM restaurants WHERE slug = ${restaurantSlug} AND is_active = true`;
+            restaurant = await db`SELECT id, slug, name, business_type FROM restaurants WHERE slug = ${restaurantSlug} AND is_active = true`;
         } else {
-            restaurant = await db`SELECT id, slug, name FROM restaurants WHERE is_active = true ORDER BY created_at ASC LIMIT 1`;
+            restaurant = await db`SELECT id, slug, name, business_type FROM restaurants WHERE is_active = true ORDER BY created_at ASC LIMIT 1`;
         }
         if (restaurant.length === 0) {
             return NextResponse.json({ error: 'Restaurante no encontrado' }, { status: 404 });
@@ -82,7 +82,7 @@ export async function POST(req: Request) {
 
         await setSessionCookie(token);
 
-        return NextResponse.json({ success: true, user: { id: user.id, name: user.name, phone: user.phone, vipLevel: user.vip_level, points: 50, restaurantSlug: finalSlug } });
+        return NextResponse.json({ success: true, user: { id: user.id, name: user.name, phone: user.phone, vipLevel: user.vip_level, points: 50, restaurantSlug: finalSlug, businessType: restaurant[0].business_type || 'restaurant' } });
     } catch (error: any) {
         console.error('Register error:', error);
         return NextResponse.json({ error: 'Error al registrar' }, { status: 500 });
