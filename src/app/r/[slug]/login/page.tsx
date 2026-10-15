@@ -21,11 +21,13 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
-            // Admin/waiter entran directo a su panel; los clientes, a la carta.
+            // Admin/waiter entran directo a su panel; los clientes, a la carta
+            // (o a puntos si el tenant es retail, que no tiene carta de restaurante).
             // Navegación DURA (ver comentario en (auth)/login): con router.push el
             // SessionProvider no se remonta y el destino rebota al login.
             const role = data.user?.role;
-            window.location.href = role === 'admin' || role === 'waiter' ? '/admin' : '/carta';
+            const isStaff = role === 'admin' || role === 'waiter';
+            window.location.href = isStaff ? '/admin' : (data.user?.businessType === 'retail' ? '/puntos' : '/carta');
         } catch (err: any) {
             setError(err.message);
         } finally { setLoading(false); }
@@ -34,7 +36,7 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
     return (
         <div className="min-h-screen bg-[#0f0f1a] flex flex-col px-6 py-8">
             <Link href={`/r/${slug}`} className="flex items-center gap-2 text-slate-400 text-sm mb-8 hover:text-white">
-                <ArrowLeft size={16} /> Volver a la carta
+                <ArrowLeft size={16} /> Volver
             </Link>
             <div className="max-w-sm mx-auto w-full">
                 <div className="flex items-center gap-2 mb-6">

@@ -36,6 +36,10 @@ const B = 'd2d2d2d2-0000-0000-0000-000000000002';
 async function borrarDatosDePrueba() {
   // Orden: primero hijos (FK sin cascade), luego el tenant.
   for (const id of [A, B]) {
+    await db`DELETE FROM retail_stock_movements WHERE restaurant_id = ${id}`;
+    await db`DELETE FROM retail_variants WHERE restaurant_id = ${id}`;
+    await db`DELETE FROM retail_products WHERE restaurant_id = ${id}`;
+    await db`DELETE FROM retail_categories WHERE restaurant_id = ${id}`;
     await db`DELETE FROM finance_transactions WHERE restaurant_id = ${id}`;
     await db`DELETE FROM boletas WHERE restaurant_id = ${id}`;
     await db`DELETE FROM users WHERE restaurant_id = ${id}`;
@@ -67,6 +71,15 @@ beforeAll(async () => {
            VALUES ('B001', 1, 'B001-00000001', 111.11, 111.11, ${A})`;
   await db`INSERT INTO boletas (serie, correlativo, numero, subtotal, total, restaurant_id)
            VALUES ('B001', 1, 'B001-00000001', 222.22, 222.22, ${B})`;
+
+  // Retail (PRP-myvipers-002): categoría + producto por tenant, con nombres marcados.
+  // Ambos tenants tienen datos → el aislamiento lo produce el filtro, no la ausencia.
+  await db`INSERT INTO retail_categories (restaurant_id, name) VALUES (${A}, 'CAT-SOLO-DE-A')`;
+  await db`INSERT INTO retail_categories (restaurant_id, name) VALUES (${B}, 'CAT-SOLO-DE-B')`;
+  await db`INSERT INTO retail_products (restaurant_id, name, brand, base_price, discount_price, season)
+           VALUES (${A}, 'PROD-SOLO-DE-A', 'MarcaA', 10, 8, 'Temp A')`;
+  await db`INSERT INTO retail_products (restaurant_id, name, brand, base_price, discount_price, season)
+           VALUES (${B}, 'PROD-SOLO-DE-B', 'MarcaB', 20, 15, 'Temp B')`;
 });
 
 afterAll(async () => {
@@ -111,6 +124,40 @@ describe('Aislamiento entre tenants — users', () => {
     expect(rows.length).toBeGreaterThan(0);
     expect(rows.every((r) => r.restaurant_id === A)).toBe(true);
     expect(rows.some((r) => r.restaurant_id === B)).toBe(false);
+  });
+});
+
+describe('Aislamiento entre tenants — retail_categories', () => {
+  it('el scope del tenant A no devuelve NINGUNA categoría de B', async () => {
+    const rows = await db`SELECT id, restaurant_id, name FROM retail_categories WHERE restaurant_id = ${A}`;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.restaurant_id === A)).toBe(true);
+    expect(rows.some((r) => r.name === 'CAT-SOLO-DE-B')).toBe(false);
+  });
+
+  it('el scope del tenant B no devuelve NINGUNA categoría de A', async () => {
+    const rows = await db`SELECT id, restaurant_id, name FROM retail_categories WHERE restaurant_id = ${B}`;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.restaurant_id === B)).toBe(true);
+    expect(rows.some((r) => r.name === 'CAT-SOLO-DE-A')).toBe(false);
+  });
+});
+
+describe('Aislamiento entre tenants — retail_products (campos nuevos incluidos)', () => {
+  it('el scope del tenant A no devuelve productos de B (ni su marca/oferta/temporada)', async () => {
+    const rows = await db`SELECT id, restaurant_id, name, brand, discount_price, season
+                          FROM retail_products WHERE restaurant_id = ${A}`;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.restaurant_id === A)).toBe(true);
+    expect(rows.some((r) => r.name === 'PROD-SOLO-DE-B')).toBe(false);
+    expect(rows.some((r) => r.brand === 'MarcaB')).toBe(false);
+  });
+
+  it('el scope del tenant B no devuelve productos de A', async () => {
+    const rows = await db`SELECT id, restaurant_id, name FROM retail_products WHERE restaurant_id = ${B}`;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((r) => r.restaurant_id === B)).toBe(true);
+    expect(rows.some((r) => r.name === 'PROD-SOLO-DE-A')).toBe(false);
   });
 });
 

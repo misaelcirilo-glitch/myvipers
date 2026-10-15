@@ -3,10 +3,13 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/shared/lib/db';
 import { getSession } from '@/shared/lib/auth';
+import { isValidTenantPhone } from '@/shared/lib/phone';
 
 const schema = z.object({
     name: z.string().min(2, 'Nombre requerido'),
-    phone: z.string().min(9, 'Teléfono inválido'),
+    // Largo mínimo genérico (no asume país); el formato real se valida abajo
+    // contra el país del tenant, con `isValidTenantPhone`.
+    phone: z.string().min(7, 'Teléfono inválido'),
     email: z.string().email().optional().or(z.literal('')),
     password: z.string().min(4).optional(),
 });
@@ -25,6 +28,11 @@ export async function POST(req: Request) {
     const phone = parsed.data.phone.replace(/\D/g, '');
     // Password por defecto: últimos 4 dígitos del teléfono
     const password = parsed.data.password || phone.slice(-4);
+
+    const [tenant] = await db`SELECT country FROM restaurants WHERE id = ${session.restaurantId} LIMIT 1`;
+    if (!isValidTenantPhone(parsed.data.phone, tenant?.country)) {
+        return NextResponse.json({ error: 'Teléfono inválido' }, { status: 400 });
+    }
 
     // Verificar si ya existe en este restaurante
     const existing = await db`

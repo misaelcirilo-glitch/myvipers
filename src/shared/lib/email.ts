@@ -58,3 +58,38 @@ export async function sendPasswordResetEmail(
         return { ok: false, error: e instanceof Error ? e.message : 'Error al enviar el correo' };
     }
 }
+
+// Aviso interno del agente de WhatsApp: un lead pide hablar con una persona.
+// Destinatario en MV_AGENT_NOTIFY_EMAIL; sin él (o sin Resend) se omite.
+export async function sendAgentHandoffEmail(opts: {
+    phone: string;
+    profileName?: string | null;
+    lastMessage: string;
+}): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+    const apiKey = process.env.RESEND_API_KEY;
+    const to = process.env.MV_AGENT_NOTIFY_EMAIL;
+    if (!apiKey || !to) return { ok: false, skipped: true };
+
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+    const waLink = `https://wa.me/${opts.phone.replace(/^\+/, '')}`;
+    const html = `
+    <div style="font-family:Segoe UI,system-ui,sans-serif;font-size:14px;color:#111">
+      <p><strong>${esc(opts.profileName || 'Un lead')}</strong> (${esc(opts.phone)}) quiere hablar con una persona.</p>
+      <p style="color:#555">Último mensaje: «${esc(opts.lastMessage)}»</p>
+      <p><a href="${waLink}">Abrir chat en WhatsApp</a></p>
+    </div>`;
+
+    try {
+        const resend = new Resend(apiKey);
+        const { error } = await resend.emails.send({
+            from: FROM,
+            to,
+            subject: `Agente WhatsApp · ${opts.profileName || opts.phone} pide hablar contigo`,
+            html,
+        });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+    } catch (e: unknown) {
+        return { ok: false, error: e instanceof Error ? e.message : 'Error al enviar el correo' };
+    }
+}

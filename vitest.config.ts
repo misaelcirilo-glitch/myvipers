@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 // Runner de tests. Entorno Node (los tests hablan con Postgres/Neon vía HTTP).
@@ -5,6 +6,8 @@ import { defineConfig } from 'vitest/config';
 // NUNCA tome por accidente la DATABASE_URL de producción del repo. La conexión se
 // pasa SIEMPRE de forma explícita por la variable TEST_DATABASE_URL al ejecutar.
 export default defineConfig({
+  // Mismo alias que tsconfig (@/ → src/).
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts', 'src/**/*.test.ts'],

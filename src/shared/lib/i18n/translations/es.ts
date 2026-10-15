@@ -72,7 +72,7 @@ export const es = {
         // FAQ
         faqTitle: 'Preguntas frecuentes',
         faq1Q: '¿Cuánto cuesta?',
-        faq1A: 'Empiezas gratis. Sin tarjeta de crédito. Cuando crezcas, tenemos planes desde 29€/mes.',
+        faq1A: 'Empiezas gratis y sin tarjeta. Cuando quieras más, activas el plan de pago desde tu panel, con 30 días de prueba gratis. El precio depende de tu país y lo ves antes de pagar.',
         faq2Q: '¿Necesito conocimientos técnicos?',
         faq2A: 'No. Si sabes usar WhatsApp, sabes usar MyVipers. Setup en 5 minutos.',
         faq3Q: '¿Mis clientes tienen que descargar una app?',

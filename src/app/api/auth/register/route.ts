@@ -3,10 +3,13 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/shared/lib/db';
 import { createToken, setSessionCookie } from '@/shared/lib/auth';
+import { isValidTenantPhone } from '@/shared/lib/phone';
 
 const schema = z.object({
     name: z.string().min(2, 'Nombre muy corto'),
-    phone: z.string().min(9, 'Teléfono inválido'),
+    // Largo mínimo genérico (no asume país); el formato real se valida abajo
+    // contra el país del tenant, con `isValidTenantPhone`.
+    phone: z.string().min(7, 'Teléfono inválido'),
     email: z.string().email('Email inválido').optional().or(z.literal('')),
     password: z.string().min(4, 'Mínimo 4 caracteres'),
     referralCode: z.string().optional(),
@@ -25,15 +28,19 @@ export async function POST(req: Request) {
         // Verificar restaurante (fallback al primero si no viene slug)
         let restaurant;
         if (restaurantSlug) {
-            restaurant = await db`SELECT id, slug, name FROM restaurants WHERE slug = ${restaurantSlug} AND is_active = true`;
+            restaurant = await db`SELECT id, slug, name, business_type, country FROM restaurants WHERE slug = ${restaurantSlug} AND is_active = true`;
         } else {
-            restaurant = await db`SELECT id, slug, name FROM restaurants WHERE is_active = true ORDER BY created_at ASC LIMIT 1`;
+            restaurant = await db`SELECT id, slug, name, business_type, country FROM restaurants WHERE is_active = true ORDER BY created_at ASC LIMIT 1`;
         }
         if (restaurant.length === 0) {
             return NextResponse.json({ error: 'Restaurante no encontrado' }, { status: 404 });
         }
         const restaurantId = restaurant[0].id;
         const finalSlug = restaurant[0].slug;
+
+        if (!isValidTenantPhone(parsed.data.phone, restaurant[0].country)) {
+            return NextResponse.json({ error: 'Teléfono inválido' }, { status: 400 });
+        }
 
         // Verificar si ya existe en este restaurante
         const existing = await db`
@@ -82,7 +89,7 @@ export async function POST(req: Request) {
 
         await setSessionCookie(token);
 
-        return NextResponse.json({ success: true, user: { id: user.id, name: user.name, phone: user.phone, vipLevel: user.vip_level, points: 50, restaurantSlug: finalSlug } });
+        return NextResponse.json({ success: true, user: { id: user.id, name: user.name, phone: user.phone, vipLevel: user.vip_level, points: 50, restaurantSlug: finalSlug, businessType: restaurant[0].business_type || 'restaurant' } });
     } catch (error: any) {
         console.error('Register error:', error);
         return NextResponse.json({ error: 'Error al registrar' }, { status: 500 });

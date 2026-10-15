@@ -67,7 +67,7 @@ export const pt: Translations = {
         testimonial3Text: 'O programa de indicação se paga sozinho. Cada cliente traz 2 a mais em média.',
         faqTitle: 'Perguntas frequentes',
         faq1Q: 'Quanto custa?',
-        faq1A: 'Começa grátis. Sem cartão de crédito. Quando crescer, planos a partir de 29€/mês.',
+        faq1A: 'Começa grátis e sem cartão. Quando quiser mais, ativa o plano pago no seu painel, com 30 dias de teste grátis. O preço depende do seu país e você o vê antes de pagar.',
         faq2Q: 'Preciso de conhecimento técnico?',
         faq2A: 'Não. Se você sabe usar WhatsApp, sabe usar MyVipers. Setup em 5 minutos.',
         faq3Q: 'Meus clientes precisam baixar um app?',
