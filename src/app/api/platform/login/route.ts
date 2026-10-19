@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
+import { resolveLogin } from '@/shared/lib/account-match';
 import { db } from '@/shared/lib/db';
 import { createToken, setSessionCookie } from '@/shared/lib/auth';
 
@@ -24,17 +24,18 @@ export async function POST(req: Request) {
             FROM users
             WHERE RIGHT(REGEXP_REPLACE(phone, '[^0-9]', '', 'g'), 9) = ${phone.slice(-9)}
               AND is_platform_admin = true
-            LIMIT 1
         `;
         if (rows.length === 0) return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
 
-        const ok = await bcrypt.compare(parsed.data.password, rows[0].password_hash);
-        if (!ok) return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
+        // El teléfono puede tener varias cuentas (una por tienda): vale la que acepte la contraseña.
+        const match = await resolveLogin(rows as { id: string; name: string; phone: string; password_hash: string }[], parsed.data.password);
+        if (match.kind === 'none') return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
+        const admin = match.kind === 'one' ? match.account : match.accounts[0];
 
         const token = await createToken({
-            userId: rows[0].id,
-            name: rows[0].name,
-            phone: rows[0].phone,
+            userId: admin.id,
+            name: admin.name,
+            phone: admin.phone,
             role: 'superadmin',
             vipLevel: 'bronce',
             restaurantId: '',

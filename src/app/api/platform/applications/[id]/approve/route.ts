@@ -32,26 +32,25 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     const modules = modulesForVertical(app.business_type);
 
-    // Crear tenant.
-    const rest = await db`
-        INSERT INTO restaurants (name, slug, business_type, enabled_modules)
-        VALUES (${app.business_name}, ${app.slug}, ${app.business_type}, ${JSON.stringify(modules)}::jsonb)
-        RETURNING id
-    `;
-    const restaurantId = rest[0].id;
-
-    // Crear usuario admin del tenant (reusa el hash de la solicitud).
-    await db`
-        INSERT INTO users (name, phone, email, password_hash, role, restaurant_id)
-        VALUES (${app.admin_name}, ${app.admin_phone}, ${app.admin_email || null}, ${app.admin_password_hash}, 'admin', ${restaurantId})
-    `;
-
-    // Marcar aprobada.
-    await db`
-        UPDATE tenant_applications
-        SET status = 'approved', reviewed_by = ${session.userId}, reviewed_at = now(), created_tenant_id = ${restaurantId}
-        WHERE id = ${id}
-    `;
+    // Tenant + usuario admin (reusa el hash de la solicitud) + solicitud aprobada, en una
+    // sola transacción: si algo falla no queda un tenant huérfano sin admin.
+    // El admin puede tener ya cuenta (cliente o admin) en otra tienda con el mismo teléfono.
+    const restaurantId = crypto.randomUUID();
+    await db.transaction([
+        db`
+            INSERT INTO restaurants (id, name, slug, business_type, enabled_modules)
+            VALUES (${restaurantId}, ${app.business_name}, ${app.slug}, ${app.business_type}, ${JSON.stringify(modules)}::jsonb)
+        `,
+        db`
+            INSERT INTO users (name, phone, email, password_hash, role, restaurant_id)
+            VALUES (${app.admin_name}, ${app.admin_phone}, ${app.admin_email || null}, ${app.admin_password_hash}, 'admin', ${restaurantId})
+        `,
+        db`
+            UPDATE tenant_applications
+            SET status = 'approved', reviewed_by = ${session.userId}, reviewed_at = now(), created_tenant_id = ${restaurantId}
+            WHERE id = ${id}
+        `,
+    ]);
 
     return NextResponse.json({ success: true, slug: app.slug, loginUrl: `/r/${app.slug}/login` });
 }

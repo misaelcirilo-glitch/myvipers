@@ -9,19 +9,24 @@ export default function LoginPage() {
     const [form, setForm] = useState({ phone: '', password: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    // El mismo teléfono puede tener cuenta en varias tiendas con la misma contraseña.
+    const [choices, setChoices] = useState<{ accountId: string; restaurantName: string; role: string }[] | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const login = async (accountId?: string) => {
         setLoading(true);
         setError('');
         try {
             const res = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(form),
+                body: JSON.stringify({ ...form, accountId }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
+            if (data.choose) {
+                setChoices(data.accounts);
+                return;
+            }
             // Navegación DURA, no router.push: el SessionProvider vive en el layout
             // raíz y solo lee la cookie al montar, así que una navegación cliente
             // llega con user=null y el guard de destino rebota otra vez al login.
@@ -34,6 +39,14 @@ export default function LoginPage() {
             setLoading(false);
         }
     };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        login();
+    };
+
+    const roleLabel = (role: string) =>
+        role === 'admin' ? t.auth.roleAdmin : role === 'waiter' ? t.auth.roleWaiter : t.auth.roleCustomer;
 
     return (
         <div className="min-h-screen flex flex-col px-6 py-8 bg-[#0f0f1a]">
@@ -50,6 +63,28 @@ export default function LoginPage() {
                     <p className="text-slate-400 text-sm mt-1">{t.auth.loginSubtitle}</p>
                 </div>
 
+                {choices ? (
+                    <div className="space-y-3">
+                        <div className="text-center mb-2">
+                            <p className="font-bold">{t.auth.chooseStore}</p>
+                            <p className="text-slate-400 text-sm">{t.auth.chooseStoreSubtitle}</p>
+                        </div>
+                        {choices.map(c => (
+                            <button
+                                key={c.accountId} type="button" disabled={loading}
+                                onClick={() => login(c.accountId)}
+                                className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-left hover:border-amber-500 transition disabled:opacity-50"
+                            >
+                                <span className="block font-bold text-white">{c.restaurantName}</span>
+                                <span className="block text-xs text-slate-400">{roleLabel(c.role)}</span>
+                            </button>
+                        ))}
+                        {error && <p className="text-red-400 text-sm text-center">{error}</p>}
+                        <button type="button" onClick={() => { setChoices(null); setError(''); }} className="w-full text-slate-400 text-sm pt-2">
+                            {t.auth.back}
+                        </button>
+                    </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <input
                         type="tel" placeholder={t.auth.phonePlaceholder} required
@@ -75,6 +110,7 @@ export default function LoginPage() {
                         {loading ? t.auth.loggingIn : t.auth.login}
                     </button>
                 </form>
+                )}
 
                 <p className="text-center text-slate-500 text-sm mt-6">
                     {t.auth.noAccount} <Link href="/registro" className="text-amber-400 font-bold">{t.auth.registerFree}</Link>

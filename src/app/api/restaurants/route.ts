@@ -5,12 +5,12 @@ import { db } from '@/shared/lib/db';
 import { createToken, setSessionCookie } from '@/shared/lib/auth';
 
 const schema = z.object({
-    restaurantName: z.string().min(2, 'Nombre del restaurante requerido'),
-    ownerName: z.string().min(2, 'Tu nombre es requerido'),
-    phone: z.string().min(9, 'Teléfono inválido'),
-    email: z.string().email('Email inválido').optional().or(z.literal('')),
+    restaurantName: z.string().trim().min(2, 'Nombre del restaurante requerido'),
+    ownerName: z.string().trim().min(2, 'Tu nombre es requerido'),
+    phone: z.string().trim().min(9, 'Teléfono inválido'),
+    email: z.string().trim().email('Email inválido').optional().or(z.literal('')),
     password: z.string().min(4, 'Mínimo 4 caracteres'),
-    city: z.string().optional(),
+    city: z.string().trim().optional(),
     country: z.enum(['PE', 'MX', 'CO', 'ES', 'AR', 'CL']).default('PE'),
 });
 
@@ -35,41 +35,41 @@ export async function POST(req: Request) {
             slug = `${slug}-${Date.now().toString(36)}`;
         }
 
-        // Crear restaurante
-        const restaurant = await db`
-            INSERT INTO restaurants (name, slug, city, country, email, phone)
-            VALUES (${restaurantName}, ${slug}, ${city || null}, ${country}, ${email || null}, ${phone})
-            RETURNING id, slug, name
-        `;
-        const restId = restaurant[0].id;
-
-        // Crear owner
         const passwordHash = await bcrypt.hash(password, 10);
         const normalizedPhone = phone.replace(/\D/g, '');
         const referralCode = ownerName.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
+        const restId = crypto.randomUUID();
+        const userId = crypto.randomUUID();
 
-        const user = await db`
-            INSERT INTO users (name, phone, email, password_hash, role, restaurant_id, referral_code)
-            VALUES (${ownerName}, ${normalizedPhone}, ${email || null}, ${passwordHash}, 'admin', ${restId}, ${referralCode})
-            RETURNING id, name, phone, role, vip_level
-        `;
-
-        // Crear 5 mesas por defecto
-        for (let i = 1; i <= 5; i++) {
-            await db`INSERT INTO tables (restaurant_id, number, name, capacity) VALUES (${restId}, ${i}, ${'Mesa ' + i}, 4)`;
-        }
-
-        // Crear recompensas default
-        await db`INSERT INTO rewards (restaurant_id, name, description, points_cost, category) VALUES
-            (${restId}, 'Bebida gratis', 'Una bebida de cortesía', 100, 'bebidas'),
-            (${restId}, 'Postre gratis', 'Un postre de la casa', 200, 'comida'),
-            (${restId}, '10% descuento', 'Descuento en tu próxima visita', 300, 'descuentos')
-        `;
+        // Restaurante + dueño + mesas + recompensas en UNA transacción: si algo falla no queda
+        // un restaurante a medias (antes cada reintento dejaba uno huérfano).
+        // El dueño puede tener ya cuenta en otra tienda con el mismo teléfono.
+        await db.transaction([
+            db`
+                INSERT INTO restaurants (id, name, slug, city, country, email, phone)
+                VALUES (${restId}, ${restaurantName}, ${slug}, ${city || null}, ${country}, ${email || null}, ${phone})
+            `,
+            db`
+                INSERT INTO users (id, name, phone, email, password_hash, role, restaurant_id, referral_code)
+                VALUES (${userId}, ${ownerName}, ${normalizedPhone}, ${email || null}, ${passwordHash}, 'admin', ${restId}, ${referralCode})
+            `,
+            // 5 mesas por defecto (el número de mesa es único por restaurante)
+            db`
+                INSERT INTO tables (restaurant_id, number, capacity)
+                SELECT ${restId}, n, 4 FROM generate_series(1, 5) AS n
+            `,
+            // Recompensas por defecto (categorías válidas: discount, free_item, experience, merchandise)
+            db`INSERT INTO rewards (restaurant_id, name, description, points_cost, category) VALUES
+                (${restId}, 'Bebida gratis', 'Una bebida de cortesía', 100, 'free_item'),
+                (${restId}, 'Postre gratis', 'Un postre de la casa', 200, 'free_item'),
+                (${restId}, '10% descuento', 'Descuento en tu próxima visita', 300, 'discount')
+            `,
+        ]);
 
         const token = await createToken({
-            userId: user[0].id,
-            name: user[0].name,
-            phone: user[0].phone,
+            userId,
+            name: ownerName,
+            phone: normalizedPhone,
             role: 'admin',
             vipLevel: 'bronce',
             restaurantId: restId,
@@ -81,11 +81,16 @@ export async function POST(req: Request) {
         return NextResponse.json({
             success: true,
             restaurant: { id: restId, slug, name: restaurantName },
-            user: { id: user[0].id, name: user[0].name },
+            user: { id: userId, name: ownerName },
         }, { status: 201 });
-    } catch (error: any) {
+    } catch (error) {
         console.error('Create restaurant error:', error);
-        return NextResponse.json({ error: error.message || 'Error al crear restaurante' }, { status: 500 });
+        // No se devuelve el error de la BD al navegador.
+        const pg = error as { code?: string; constraint?: string };
+        if (pg.code === '23505' && pg.constraint === 'restaurants_slug_key') {
+            return NextResponse.json({ error: 'Ya existe un restaurante con ese nombre. Prueba con otro.' }, { status: 409 });
+        }
+        return NextResponse.json({ error: 'No se pudo crear el restaurante. Inténtalo de nuevo.' }, { status: 500 });
     }
 }
 

@@ -1,14 +1,22 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import bcrypt from 'bcryptjs';
 import { db } from '@/shared/lib/db';
 import { createToken, setSessionCookie } from '@/shared/lib/auth';
+import { phoneKey, resolveLogin } from '@/shared/lib/account-match';
 
 const schema = z.object({
     phone: z.string().min(9),
     password: z.string().min(1),
     restaurantSlug: z.string().optional(),
+    // Tras elegir tienda en /login: la cuenta concreta (la contraseña se vuelve a comprobar).
+    accountId: z.string().uuid().optional(),
 });
+
+type Account = {
+    id: string; name: string; phone: string; password_hash: string; role: 'customer' | 'admin' | 'waiter';
+    vip_level: string; available_points: number; restaurant_id: string; // NULL solo en la cuenta de plataforma
+    restaurant_slug: string | null; restaurant_name: string | null; business_type: string | null;
+};
 
 export async function POST(req: Request) {
     try {
@@ -16,40 +24,52 @@ export async function POST(req: Request) {
         const parsed = schema.safeParse(body);
         if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
 
-        const { password, restaurantSlug } = parsed.data;
-        const last9 = parsed.data.phone.replace(/\D/g, '').slice(-9);
+        const { password, restaurantSlug, accountId } = parsed.data;
+        const last9 = phoneKey(parsed.data.phone);
 
-        let result;
-        if (restaurantSlug) {
-            result = await db`
+        // Un teléfono puede tener cuenta en varias tiendas: con slug hay como mucho una;
+        // sin slug se traen todas y decide la contraseña.
+        const result = (restaurantSlug
+            ? await db`
                 SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
-                       u.restaurant_id, r.slug as restaurant_slug, r.business_type
+                       u.restaurant_id, r.slug as restaurant_slug, r.name as restaurant_name, r.business_type
                 FROM users u
                 JOIN restaurants r ON r.id = u.restaurant_id
                 WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}
                   AND r.slug = ${restaurantSlug}
                 LIMIT 1
-            `;
-        } else {
-            result = await db`
+            `
+            : await db`
                 SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
-                       u.restaurant_id, r.slug as restaurant_slug, r.business_type
+                       u.restaurant_id, r.slug as restaurant_slug, r.name as restaurant_name, r.business_type
                 FROM users u
                 LEFT JOIN restaurants r ON r.id = u.restaurant_id
                 WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}
-                LIMIT 1
-            `;
-        }
+                ORDER BY r.name NULLS LAST
+            `) as Account[];
 
-        if (result.length === 0) {
+        const candidates = accountId ? result.filter(u => u.id === accountId) : result;
+        if (candidates.length === 0) {
             return NextResponse.json({ error: 'Número no registrado' }, { status: 401 });
         }
 
-        const user = result[0];
-        const valid = await bcrypt.compare(password, user.password_hash);
-        if (!valid) {
+        const resolution = await resolveLogin(candidates, password);
+        if (resolution.kind === 'none') {
             return NextResponse.json({ error: 'Contraseña incorrecta' }, { status: 401 });
         }
+        if (resolution.kind === 'choose') {
+            // Solo se listan las tiendas cuya contraseña ya coincide.
+            return NextResponse.json({
+                choose: true,
+                accounts: resolution.accounts.map(a => ({
+                    accountId: a.id,
+                    restaurantName: a.restaurant_name || 'MyVipers',
+                    role: a.role,
+                })),
+            });
+        }
+
+        const user = resolution.account;
 
         const token = await createToken({
             userId: user.id,

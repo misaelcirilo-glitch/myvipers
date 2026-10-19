@@ -25,6 +25,8 @@ export async function POST(req: Request) {
         const { restaurantSlug } = parsed.data;
         const last9 = parsed.data.phone.replace(/\D/g, '').slice(-9);
 
+        // Un teléfono puede tener cuenta en varias tiendas: con slug hay como mucho una; sin
+        // slug se envía un enlace por cada cuenta con correo (cada uno restablece SU cuenta).
         const rows = restaurantSlug
             ? await db`
                 SELECT u.id, u.name, u.email, u.password_hash, r.name AS restaurant_name
@@ -35,15 +37,14 @@ export async function POST(req: Request) {
             : await db`
                 SELECT u.id, u.name, u.email, u.password_hash, r.name AS restaurant_name
                 FROM users u LEFT JOIN restaurants r ON r.id = u.restaurant_id
-                WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}
-                LIMIT 1`;
+                WHERE RIGHT(REGEXP_REPLACE(u.phone, '[^0-9]', '', 'g'), 9) = ${last9}`;
 
         if (rows.length === 0) {
             return NextResponse.json({ status: 'not_found' });
         }
 
-        const user = rows[0];
-        if (!user.email) {
+        const withEmail = rows.filter(u => u.email);
+        if (withEmail.length === 0) {
             return NextResponse.json({ status: 'no_email' });
         }
 
@@ -52,24 +53,30 @@ export async function POST(req: Request) {
         const proto = req.headers.get('x-forwarded-proto') || 'https';
         const base = `${proto}://${host}`;
 
-        const token = await createResetToken(user.id, user.password_hash);
-        const resetUrl = `${base}/restablecer?token=${encodeURIComponent(token)}`;
+        const sentTo: string[] = [];
+        let lastError: { skipped?: boolean; error?: string } | null = null;
+        for (const user of withEmail) {
+            const token = await createResetToken(user.id, user.password_hash);
+            const resetUrl = `${base}/restablecer?token=${encodeURIComponent(token)}`;
 
-        const sent = await sendPasswordResetEmail({
-            to: user.email,
-            name: user.name,
-            resetUrl,
-            restaurantName: user.restaurant_name || 'MyVipers',
-        });
+            const sent = await sendPasswordResetEmail({
+                to: user.email,
+                name: user.name,
+                resetUrl,
+                restaurantName: user.restaurant_name || 'MyVipers',
+            });
+            if (sent.ok) sentTo.push(maskEmail(user.email));
+            else lastError = sent;
+        }
 
-        if (!sent.ok) {
+        if (sentTo.length === 0) {
             return NextResponse.json(
-                { status: 'error', error: sent.skipped ? 'El envío de correos no está configurado' : (sent.error || 'No se pudo enviar el correo') },
+                { status: 'error', error: lastError?.skipped ? 'El envío de correos no está configurado' : (lastError?.error || 'No se pudo enviar el correo') },
                 { status: 502 }
             );
         }
 
-        return NextResponse.json({ status: 'sent', email: maskEmail(user.email) });
+        return NextResponse.json({ status: 'sent', email: [...new Set(sentTo)].join(', ') });
     } catch (error) {
         console.error('forgot-password error:', error);
         return NextResponse.json({ error: 'Error al procesar la solicitud' }, { status: 500 });
