@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/shared/lib/db';
 import { createToken, setSessionCookie } from '@/shared/lib/auth';
+import { starterKitQueries } from '@/shared/lib/tenant-starter';
 
 const schema = z.object({
     restaurantName: z.string().trim().min(2, 'Nombre del restaurante requerido'),
@@ -41,8 +42,8 @@ export async function POST(req: Request) {
         const restId = crypto.randomUUID();
         const userId = crypto.randomUUID();
 
-        // Restaurante + dueño + mesas + recompensas en UNA transacción: si algo falla no queda
-        // un restaurante a medias (antes cada reintento dejaba uno huérfano).
+        // Restaurante + dueño + kit de inicio (mesas y recompensas) en UNA transacción: si algo
+        // falla no queda un restaurante a medias (antes cada reintento dejaba uno huérfano).
         // El dueño puede tener ya cuenta en otra tienda con el mismo teléfono.
         await db.transaction([
             db`
@@ -53,17 +54,7 @@ export async function POST(req: Request) {
                 INSERT INTO users (id, name, phone, email, password_hash, role, restaurant_id, referral_code)
                 VALUES (${userId}, ${ownerName}, ${normalizedPhone}, ${email || null}, ${passwordHash}, 'admin', ${restId}, ${referralCode})
             `,
-            // 5 mesas por defecto (el número de mesa es único por restaurante)
-            db`
-                INSERT INTO tables (restaurant_id, number, capacity)
-                SELECT ${restId}, n, 4 FROM generate_series(1, 5) AS n
-            `,
-            // Recompensas por defecto (categorías válidas: discount, free_item, experience, merchandise)
-            db`INSERT INTO rewards (restaurant_id, name, description, points_cost, category) VALUES
-                (${restId}, 'Bebida gratis', 'Una bebida de cortesía', 100, 'free_item'),
-                (${restId}, 'Postre gratis', 'Un postre de la casa', 200, 'free_item'),
-                (${restId}, '10% descuento', 'Descuento en tu próxima visita', 300, 'discount')
-            `,
+            ...starterKitQueries(restId, 'restaurant'),
         ]);
 
         const token = await createToken({

@@ -9,6 +9,28 @@
  * onboarding lo ofrece solo; la aprobación activa sus módulos. Nada hardcodeado.
  */
 
+/** Categorías que admite rewards.category (CHECK en BD). */
+export type RewardCategory = "discount" | "free_item" | "experience" | "merchandise";
+
+export interface StarterReward {
+    name: string;
+    description: string;
+    points_cost: number;
+    category: RewardCategory;
+}
+
+/**
+ * Lo que se crea junto con el negocio en su alta (por cualquier vía: /crear-restaurante
+ * o aprobación de /registrar-negocio) para que nunca empiece vacío. El dueño luego lo
+ * edita desde su panel.
+ */
+export interface StarterKit {
+    /** Mesas 1..N (solo verticales con sala; 0 = sin mesas). */
+    tables: number;
+    /** Recompensas iniciales del programa de puntos (al menos una). */
+    rewards: StarterReward[];
+}
+
 export interface VerticalPreset {
     /** Discriminador guardado en restaurants.business_type. */
     type: string;
@@ -18,17 +40,41 @@ export interface VerticalPreset {
     modules: string[];
     /** Si se ofrece actualmente en el onboarding público. */
     enabled: boolean;
+    /** Kit de inicio que se crea en el alta. Obligatorio: lo comprueba verticals.test.ts. */
+    starter: StarterKit;
 }
 
 export const VERTICALS: VerticalPreset[] = [
-    { type: "restaurant", label: "Restaurante", modules: ["restaurant"], enabled: true },
+    {
+        type: "restaurant",
+        label: "Restaurante",
+        modules: ["restaurant"],
+        enabled: true,
+        starter: {
+            tables: 5,
+            rewards: [
+                { name: "Bebida gratis", description: "Una bebida de cortesía", points_cost: 100, category: "free_item" },
+                { name: "Postre gratis", description: "Un postre de la casa", points_cost: 200, category: "free_item" },
+                { name: "10% descuento", description: "Descuento en tu próxima visita", points_cost: 300, category: "discount" },
+            ],
+        },
+    },
     {
         type: "retail",
         label: "Tienda / Retail (moda, calzado, accesorios)",
         modules: ["retail"],
         enabled: true,
+        starter: {
+            tables: 0,
+            rewards: [
+                { name: "10% descuento", description: "Descuento en tu próxima compra", points_cost: 300, category: "discount" },
+                { name: "Regalo sorpresa", description: "Un detalle de la tienda", points_cost: 800, category: "free_item" },
+                { name: "20% descuento", description: "Descuento en una prenda a elegir", points_cost: 1000, category: "discount" },
+            ],
+        },
     },
-    // Futuros verticales (cosmética, cafetería, …): añadir aquí cuando exista su módulo.
+    // Futuros verticales (peluquería, cosmética, cafetería, …): añadir aquí cuando exista
+    // su módulo, CON su `starter` (p. ej. peluquería: tables 0, "Lavado gratis", "Corte gratis").
 ];
 
 /** Preset de un tipo de negocio (o undefined si no existe). */

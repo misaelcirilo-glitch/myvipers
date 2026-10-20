@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
 import { requirePlatformAdmin } from '@/shared/lib/platform';
 import { isValidVertical, modulesForVertical } from '@/shared/lib/verticals';
+import { starterKitQueries } from '@/shared/lib/tenant-starter';
 
 // Aprobar una solicitud: crea el tenant (restaurants) con los módulos del preset del
 // vertical + su usuario admin (reusando el hash del solicitante) y marca la solicitud
@@ -32,8 +33,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     const modules = modulesForVertical(app.business_type);
 
-    // Tenant + usuario admin (reusa el hash de la solicitud) + solicitud aprobada, en una
-    // sola transacción: si algo falla no queda un tenant huérfano sin admin.
+    // Tenant + usuario admin (reusa el hash de la solicitud) + kit de inicio de su vertical
+    // (mesas/recompensas) + solicitud aprobada, en una sola transacción: si algo falla no
+    // queda un tenant huérfano ni a medias.
     // El admin puede tener ya cuenta (cliente o admin) en otra tienda con el mismo teléfono.
     const restaurantId = crypto.randomUUID();
     await db.transaction([
@@ -50,6 +52,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
             SET status = 'approved', reviewed_by = ${session.userId}, reviewed_at = now(), created_tenant_id = ${restaurantId}
             WHERE id = ${id}
         `,
+        ...starterKitQueries(restaurantId, app.business_type),
     ]);
 
     return NextResponse.json({ success: true, slug: app.slug, loginUrl: `/r/${app.slug}/login` });
