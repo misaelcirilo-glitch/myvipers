@@ -52,6 +52,8 @@ export default function AdminPage() {
     const [editingReward, setEditingReward] = useState<any>(null);
     const [logoUploading, setLogoUploading] = useState(false);
     const [restaurantInfo, setRestaurantInfo] = useState<any>(null);
+    const [businessForm, setBusinessForm] = useState({ name: '', city: '', phone: '', country: '', currency: '', timezone: '' });
+    const [savingBusiness, setSavingBusiness] = useState(false);
     const [checkoutResult, setCheckoutResult] = useState<'ok' | 'cancel' | null>(null);
 
     // Vuelta de Stripe Checkout (?checkout=ok|cancel) o del Billing Portal
@@ -99,8 +101,35 @@ export default function AdminPage() {
     }, [tab, promoLoading, rewardLoading, financeLoading, financePeriod]);
 
     useEffect(() => {
-        fetch('/api/admin/restaurant-info').then(r => r.json()).then(setRestaurantInfo).catch(() => {});
+        fetch('/api/admin/restaurant-info').then(r => r.json()).then(info => {
+            setRestaurantInfo(info);
+            setBusinessForm({
+                name: info.name || '', city: info.city || '', phone: info.phone || '',
+                country: info.country || 'PE', currency: info.currency || 'PEN', timezone: info.timezone || 'America/Lima',
+            });
+        }).catch(() => {});
     }, []);
+
+    const handleSaveBusinessInfo = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSavingBusiness(true);
+        try {
+            const res = await fetch('/api/admin/restaurant-info', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(businessForm),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            // Recarga dura: el nombre/moneda se leen en el header vía RestaurantContext,
+            // que solo fetchea /api/config una vez al montar (mismo patrón que el login).
+            window.location.reload();
+        } catch (err: any) {
+            alert(err.message || 'No se pudo guardar');
+        } finally {
+            setSavingBusiness(false);
+        }
+    };
 
     // Si el tenant no tiene el módulo 'restaurant', el tab por defecto
     // ('reservations') queda oculto → cae en 'clientes' (core). Para El Machay
@@ -1303,6 +1332,60 @@ export default function AdminPage() {
                             <BillingCard checkoutResult={checkoutResult} />
                         </>
                     )}
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Datos del negocio</h3>
+                    <form onSubmit={handleSaveBusinessInfo} className="bg-[#1a1a2e] border border-[#2a2a3e] rounded-2xl p-4 space-y-3">
+                        <div>
+                            <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Nombre</label>
+                            <input
+                                type="text" required value={businessForm.name}
+                                onChange={e => setBusinessForm(f => ({ ...f, name: e.target.value }))}
+                                className="w-full px-3 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Ciudad</label>
+                                <input
+                                    type="text" value={businessForm.city}
+                                    onChange={e => setBusinessForm(f => ({ ...f, city: e.target.value }))}
+                                    className="w-full px-3 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Teléfono</label>
+                                <input
+                                    type="text" value={businessForm.phone}
+                                    onChange={e => setBusinessForm(f => ({ ...f, phone: e.target.value }))}
+                                    className="w-full px-3 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Moneda</label>
+                                <input
+                                    type="text" value={businessForm.currency}
+                                    onChange={e => setBusinessForm(f => ({ ...f, currency: e.target.value }))}
+                                    className="w-full px-3 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Zona horaria</label>
+                                <input
+                                    type="text" value={businessForm.timezone}
+                                    onChange={e => setBusinessForm(f => ({ ...f, timezone: e.target.value }))}
+                                    className="w-full px-3 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-white outline-none focus:border-amber-500 text-sm"
+                                />
+                            </div>
+                        </div>
+                        <button
+                            type="submit" disabled={savingBusiness}
+                            className="w-full py-3 bg-amber-500 text-white font-black text-sm uppercase tracking-widest rounded-xl shadow-md hover:brightness-110 active:scale-95 transition-all disabled:opacity-50"
+                        >
+                            {savingBusiness ? 'Guardando...' : 'Guardar cambios'}
+                        </button>
+                    </form>
+
                     <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Logo del restaurante</h3>
                     <p className="text-[10px] text-slate-500">Este logo aparecerá como icono cuando los clientes agreguen tu restaurante a su móvil.</p>
 

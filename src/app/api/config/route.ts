@@ -33,6 +33,27 @@ export async function GET() {
         for (const row of rows) {
             config[row.key] = row.value;
         }
+
+        // Base de `restaurant`: la fila de `restaurants` (nombre, ciudad, moneda…)
+        // que todo tenant tiene desde que se crea. La fila de `config` (si existe)
+        // la sobreescribe campo a campo — así un tenant nuevo (sin fila en `config`,
+        // como pasa con todos salvo El Machay) ya muestra sus datos reales en vez
+        // del placeholder genérico "Mi Restaurante".
+        if (restaurantId) {
+            const [rest] = await db`
+                SELECT name, city, phone, country, currency, timezone, logo_url
+                FROM restaurants WHERE id = ${restaurantId} LIMIT 1
+            `;
+            if (rest) {
+                config.restaurant = {
+                    name: rest.name, city: rest.city || '', phone: rest.phone || '',
+                    country: rest.country, currency: rest.currency, timezone: rest.timezone,
+                    logo_url: rest.logo_url,
+                    ...config.restaurant,
+                };
+            }
+        }
+
         return NextResponse.json({ config, enabledModules, businessType });
     } catch {
         // Fallback defaults if DB not available
