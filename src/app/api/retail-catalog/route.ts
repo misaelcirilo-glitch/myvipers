@@ -1,13 +1,21 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/shared/lib/db';
+import { descendantIds } from '@/shared/lib/category-tree';
 
 // Catálogo público de un tenant retail (lectura, sin sesión) — equivalente a
 // `/api/menu` para los tenants con el módulo 'restaurant'. Solo productos y
 // categorías activos; las variantes exponen talla/color y si hay stock (nunca
 // el conteo exacto, eso es dato de gestión interna).
+//
+// `categories` se devuelve siempre completa y plana (con `parent_id`): el
+// cliente arma el árbol y navega (igual que ya hace el admin en RetailTab).
+// `?category_id=` (opcional) filtra `products` a esa categoría + todos sus
+// descendientes — útil para un deep-link directo a una categoría.
 export async function GET(req: Request) {
     try {
-        const slug = new URL(req.url).searchParams.get('slug');
+        const { searchParams } = new URL(req.url);
+        const slug = searchParams.get('slug');
+        const categoryId = searchParams.get('category_id');
         if (!slug) return NextResponse.json({ error: 'Falta slug' }, { status: 400 });
 
         const restaurant = await db`
@@ -42,11 +50,17 @@ export async function GET(req: Request) {
             (variantsByProduct[pid] ||= []).push({ size: v.size as string | null, color: v.color as string | null });
         }
 
-        const catalog = products.map((p) => ({
+        let catalog = products.map((p) => ({
             ...p,
+            category_id: p.category_id as string | null,
             inStock: variantsByProduct[p.id] ? !!stockByProduct[p.id] : true, // sin variantes = producto simple, se asume disponible
             variants: variantsByProduct[p.id] || [],
         }));
+
+        if (categoryId) {
+            const allowed = descendantIds(categories as { id: string; name: string; parent_id: string | null }[], categoryId);
+            catalog = catalog.filter((p) => p.category_id && allowed.has(p.category_id));
+        }
 
         return NextResponse.json({ restaurant: restaurant[0], categories, products: catalog });
     } catch (error) {

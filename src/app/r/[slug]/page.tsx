@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import { Star, Loader2, Phone, MapPin, Zap, Tag, ShoppingBag } from 'lucide-react';
+import { Star, Loader2, Phone, MapPin, Zap, Tag, ShoppingBag, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { childrenOf, categoryPath as buildCategoryPath, descendantIds } from '@/shared/lib/category-tree';
 
 interface Restaurant {
     name: string; slug: string; description: string | null;
@@ -56,7 +57,8 @@ export default function TenantPublicPage({ params }: { params: Promise<{ slug: s
                         .then(cat => {
                             setRetailCategories(cat.categories || []);
                             setRetailProducts(cat.products || []);
-                            if (cat.categories?.length > 0) setActiveCategory(cat.categories[0].id);
+                            // Retail arranca en la raíz del árbol (sin filtro), no en la
+                            // primera categoría — el cliente navega raíz → hijas → ...
                         });
                 }
                 return fetch(`/api/menu?slug=${slug}`)
@@ -113,9 +115,16 @@ export default function TenantPublicPage({ params }: { params: Promise<{ slug: s
 
     const isRetail = businessType === 'retail';
 
+    // Árbol de categorías retail: breadcrumb (raíz→actual) + hijas directas de
+    // la categoría activa (null = raíz). Seleccionar una filtra productos de
+    // ella y de TODAS sus descendientes, y revela sus hijas para seguir bajando.
+    const retailBreadcrumb = isRetail ? buildCategoryPath(retailCategories, activeCategory) : [];
+    const retailChildCats = isRetail ? childrenOf(retailCategories, activeCategory) : [];
+    const allowedCategoryIds = isRetail && activeCategory ? descendantIds(retailCategories, activeCategory) : null;
+
     const filteredRetail = retailProducts.filter(p => {
         const matchSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-        const matchCat = !activeCategory || p.category_id === activeCategory;
+        const matchCat = !allowedCategoryIds || (!!p.category_id && allowedCategoryIds.has(p.category_id));
         return matchSearch && matchCat;
     });
 
@@ -160,18 +169,54 @@ export default function TenantPublicPage({ params }: { params: Promise<{ slug: s
                         className="w-full mt-3 px-4 py-2.5 bg-[#0f0f1a] border border-white/10 rounded-xl text-sm text-white placeholder-slate-600 outline-none focus:border-emerald-500"
                     />
 
-                    {/* Category pills */}
-                    {(isRetail ? retailCategories : categories).length > 0 && (
-                        <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4">
-                            {(isRetail ? retailCategories : categories).map((c: any) => (
-                                <button key={c.id} onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
-                                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                                        activeCategory === c.id ? 'bg-emerald-500 text-white' : 'bg-[#1a1a2e] border border-white/10 text-slate-400'
-                                    }`}>
-                                    {c.icon} {c.name}
-                                </button>
-                            ))}
-                        </div>
+                    {/* Navegación de categorías */}
+                    {isRetail ? (
+                        retailCategories.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                                {/* Breadcrumb: raíz → ... → categoría activa */}
+                                {retailBreadcrumb.length > 0 && (
+                                    <div className="flex items-center gap-1 flex-wrap text-xs">
+                                        <button onClick={() => setActiveCategory(null)}
+                                            className={`font-bold transition-colors ${!activeCategory ? 'text-emerald-400' : 'text-slate-400 hover:text-white'}`}>
+                                            Todo
+                                        </button>
+                                        {retailBreadcrumb.map((c, i) => (
+                                            <span key={c.id} className="flex items-center gap-1">
+                                                <ChevronRight size={11} className="text-slate-600" />
+                                                <button onClick={() => setActiveCategory(c.id)}
+                                                    className={`font-bold transition-colors ${i === retailBreadcrumb.length - 1 ? 'text-emerald-400' : 'text-slate-400 hover:text-white'}`}>
+                                                    {c.name}
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                                {/* Hijas de la categoría activa (raíz si no hay ninguna activa) */}
+                                {retailChildCats.length > 0 && (
+                                    <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
+                                        {retailChildCats.map(c => (
+                                            <button key={c.id} onClick={() => setActiveCategory(c.id)}
+                                                className="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap bg-[#1a1a2e] border border-white/10 text-slate-400 hover:border-emerald-500/50 hover:text-white transition-all">
+                                                {c.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    ) : (
+                        categories.length > 0 && (
+                            <div className="flex gap-2 mt-3 overflow-x-auto pb-1 -mx-4 px-4">
+                                {categories.map((c) => (
+                                    <button key={c.id} onClick={() => setActiveCategory(activeCategory === c.id ? null : c.id)}
+                                        className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                                            activeCategory === c.id ? 'bg-emerald-500 text-white' : 'bg-[#1a1a2e] border border-white/10 text-slate-400'
+                                        }`}>
+                                        {c.icon} {c.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )
                     )}
                 </div>
             </div>
