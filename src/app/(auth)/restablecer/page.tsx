@@ -16,7 +16,7 @@ function RestablecerInner() {
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         setError('');
-        if (form.password.length < 4) return setError('La contraseña debe tener al menos 4 caracteres');
+        if (form.password.length < 8) return setError('La contraseña debe tener al menos 8 caracteres');
         if (form.password !== form.confirm) return setError('Las contraseñas no coinciden');
         setLoading(true);
         try {
@@ -71,7 +71,7 @@ function RestablecerInner() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
                 <input
-                    type="password" placeholder="Nueva contraseña" required
+                    type="password" placeholder="Nueva contraseña (mínimo 8 caracteres)" required minLength={8}
                     className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                     value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                 />
