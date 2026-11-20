@@ -15,19 +15,28 @@ if (!url) {
   throw new Error('TEST_DATABASE_URL no está definida. Pásala apuntando a la rama de STAGING (no a producción).');
 }
 
-const T = 'd5d5d5d5-0000-0000-0000-000000000005';
-const CUST = 'd5d5d5d5-0000-0000-0000-0000000000c1';
-const REWARD = 'd5d5d5d5-0000-0000-0000-0000000000e1';
+const T = 'd5d5d5d5-0000-4000-8000-000000000005';
+const CUST = 'd5d5d5d5-0000-4000-8000-0000000000c1';
+const REWARD = 'd5d5d5d5-0000-4000-8000-0000000000e1';
 const COST = 100;
 
+// La carrera real depende de milisegundos. Para que la prueba sea determinista, la sentencia
+// que descuenta el saldo se retrasa 400 ms: así TODAS las peticiones han leído ya el saldo
+// antes de que ninguna lo descuente. Con el código antiguo (leer y luego descontar) salen
+// bien las 8 y el saldo queda negativo; con el descuento condicionado, solo una.
 vi.mock('@/shared/lib/db', async () => {
   const { neon: connect } = await import('@neondatabase/serverless');
-  return { db: connect(process.env.TEST_DATABASE_URL!) };
+  const real = connect(process.env.TEST_DATABASE_URL!);
+  const db = (strings: TemplateStringsArray, ...values: unknown[]) => {
+    if (!strings.join(' ').includes('UPDATE users SET available_points')) return real(strings, ...values);
+    return new Promise((resolve) => setTimeout(resolve, 400)).then(() => real(strings, ...values));
+  };
+  return { db };
 });
 vi.mock('@/shared/lib/auth', () => ({
   getSession: async () => ({
-    userId: 'd5d5d5d5-0000-0000-0000-0000000000c1', name: 'Cliente canje', phone: '900000051', role: 'customer',
-    vipLevel: 'bronze', restaurantId: 'd5d5d5d5-0000-0000-0000-000000000005', restaurantSlug: 'iso-canje',
+    userId: 'd5d5d5d5-0000-4000-8000-0000000000c1', name: 'Cliente canje', phone: '900000051', role: 'customer',
+    vipLevel: 'bronze', restaurantId: 'd5d5d5d5-0000-4000-8000-000000000005', restaurantSlug: 'iso-canje',
   }),
 }));
 
