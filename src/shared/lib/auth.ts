@@ -1,8 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { db } from './db';
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'myvipers-secret-2026');
+import { jwtSecret } from './jwt-secret';
 
 export interface Session {
     userId: string;
@@ -18,12 +17,12 @@ export async function createToken(payload: Session): Promise<string> {
     return new SignJWT(payload as any)
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('30d')
-        .sign(JWT_SECRET);
+        .sign(jwtSecret());
 }
 
 export async function verifyToken(token: string): Promise<Session | null> {
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, jwtSecret());
         return payload as unknown as Session;
     } catch {
         return null;
@@ -38,12 +37,12 @@ export async function createResetToken(userId: string, passwordHash: string): Pr
     return new SignJWT({ userId, type: 'pwreset', fp: passwordHash.slice(-12) })
         .setProtectedHeader({ alg: 'HS256' })
         .setExpirationTime('1h')
-        .sign(JWT_SECRET);
+        .sign(jwtSecret());
 }
 
 export async function verifyResetToken(token: string): Promise<{ userId: string; fp: string } | null> {
     try {
-        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const { payload } = await jwtVerify(token, jwtSecret());
         if ((payload as any).type !== 'pwreset' || !payload.userId) return null;
         return { userId: payload.userId as string, fp: (payload as any).fp as string };
     } catch {

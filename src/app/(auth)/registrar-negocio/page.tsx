@@ -111,7 +111,7 @@ export default function RegisterBusinessPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                     <Field label="Contraseña">
-                        <input value={form.password} onChange={(e) => set('password', e.target.value)} type="password" className={inputCls} />
+                        <input value={form.password} onChange={(e) => set('password', e.target.value)} type="password" minLength={8} placeholder="Mínimo 8 caracteres" className={inputCls} />
                     </Field>
                     <Field label="País (opcional)">
                         <input value={form.country} onChange={(e) => set('country', e.target.value)} className={inputCls} placeholder="PE / ES…" />

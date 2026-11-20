@@ -75,11 +75,11 @@ export function parseAgentReply(raw: string, model: string): AgentReply {
 export function fallbackReply(businessType: 'restaurant' | 'retail' | null): AgentReply {
     let reply: string;
     if (businessType === 'restaurant') {
-        reply = `¡Hola! Gracias por escribir a MyVipers. Puedes crear tu restaurante gratis y sin tarjeta en un minuto aquí: ${SIGNUP_RESTAURANT_URL}`;
+        reply = `¡Hola! Gracias por escribir a MyVipers. Puedes registrar tu restaurante gratis y sin tarjeta aquí: ${SIGNUP_RESTAURANT_URL} (la cuenta se activa tras una revisión rápida).`;
     } else if (businessType === 'retail') {
         reply = `¡Hola! Gracias por escribir a MyVipers. Puedes registrar tu tienda gratis aquí: ${SIGNUP_RETAIL_URL} (la cuenta se activa tras una revisión rápida).`;
     } else {
-        reply = `¡Hola! Gracias por escribir a MyVipers, la plataforma de puntos VIP y fidelización para negocios. Si tienes un restaurante, créalo gratis aquí: ${SIGNUP_RESTAURANT_URL}. Si tienes una tienda, regístrala aquí: ${SIGNUP_RETAIL_URL}`;
+        reply = `¡Hola! Gracias por escribir a MyVipers, la plataforma de puntos VIP y fidelización para negocios. Puedes registrar tu negocio gratis aquí: ${SIGNUP_RESTAURANT_URL} (la cuenta se activa tras una revisión rápida).`;
     }
     return { reply, businessType, country: null, status: 'directed_to_signup', wantsHuman: false, model: 'fallback' };
 }
