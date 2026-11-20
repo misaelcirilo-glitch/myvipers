@@ -35,19 +35,27 @@ export async function POST(req: Request) {
         const reward = await db`SELECT id, name, points_cost FROM rewards WHERE id = ${rewardId} AND is_active = true AND restaurant_id = ${session.restaurantId}`;
         if (reward.length === 0) return NextResponse.json({ error: 'Premio no encontrado' }, { status: 404 });
 
-        const user = await db`SELECT available_points FROM users WHERE id = ${session.userId}`;
-        if (user[0].available_points < reward[0].points_cost) {
+        // Comprobar el saldo, descontarlo y apuntar el canje es UNA sola sentencia: el UPDATE solo
+        // descuenta si el saldo alcanza, y el movimiento y el canje solo se escriben si descontó.
+        // Dos canjes simultáneos ya no pueden gastar el mismo saldo.
+        const cost = reward[0].points_cost;
+        const done = await db`
+            WITH spent AS (
+                UPDATE users SET available_points = available_points - ${cost}::int
+                WHERE id = ${session.userId} AND restaurant_id = ${session.restaurantId} AND available_points >= ${cost}::int
+                RETURNING id
+            ), tx AS (
+                INSERT INTO point_transactions (user_id, restaurant_id, type, points, description)
+                SELECT id, ${session.restaurantId}::uuid, 'redeem', ${-cost}::int, ${`Canje: ${reward[0].name}`}::text FROM spent
+            ), red AS (
+                INSERT INTO redemptions (user_id, reward_id, points_spent, restaurant_id)
+                SELECT id, ${rewardId}::uuid, ${cost}::int, ${session.restaurantId}::uuid FROM spent
+            )
+            SELECT count(*)::int AS n FROM spent
+        `;
+        if (done[0].n === 0) {
             return NextResponse.json({ error: 'No tienes suficientes puntos' }, { status: 400 });
         }
-
-        // Deduct points
-        await db`UPDATE users SET available_points = available_points - ${reward[0].points_cost} WHERE id = ${session.userId}`;
-
-        // Log transaction
-        await db`INSERT INTO point_transactions (user_id, restaurant_id, type, points, description) VALUES (${session.userId}, ${session.restaurantId}, 'redeem', ${-reward[0].points_cost}, ${`Canje: ${reward[0].name}`})`;
-
-        // Create redemption
-        await db`INSERT INTO redemptions (user_id, reward_id, points_spent, restaurant_id) VALUES (${session.userId}, ${rewardId}, ${reward[0].points_cost}, ${session.restaurantId})`;
 
         // Copy vertical-aware: el restaurante conserva su wording exacto ("al mesero");
         // el retail recibe uno apropiado (mostrar en caja). Default 'restaurant'.
