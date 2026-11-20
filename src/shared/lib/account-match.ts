@@ -27,6 +27,17 @@ export async function resolveLogin<T extends { password_hash: string }>(
     return { kind: 'choose', accounts: valid };
 }
 
+/**
+ * ¿Hay que obligar a cambiar la contraseña antes de abrir sesión?
+ *   · la cuenta está marcada (la creó el administrador con una contraseña temporal), o
+ *   · la contraseña son las 4 últimas cifras del teléfono (la temporal antigua, adivinable).
+ */
+export function mustChangePassword(account: { phone: string; must_change_password?: boolean | null }, password: string): boolean {
+    if (account.must_change_password) return true;
+    const digits = account.phone.replace(/\D/g, '');
+    return digits.length >= 4 && password === digits.slice(-4);
+}
+
 /** Últimos 9 dígitos del teléfono: la misma clave que usan login, registro y el índice único. */
 export function phoneKey(phone: string): string {
     return phone.replace(/\D/g, '').slice(-9);
