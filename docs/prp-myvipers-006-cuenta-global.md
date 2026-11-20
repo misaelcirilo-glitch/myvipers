@@ -46,6 +46,7 @@ Una cuenta **solo existe si el teléfono está verificado** (`verified_at` oblig
 Hoy todos los números son de 9 cifras sin prefijo, y Perú y España usan ambos 9 cifras: comparar solo las 9 últimas podría unir a dos personas distintas de dos países. Por eso:
 - La cuenta se identifica por el número **completo con prefijo** (formato E.164, p. ej. `+51934879292`).
 - Una fila de `users` se une a una cuenta solo si **el prefijo del país de su negocio + sus 9 cifras** coincide con el número verificado. Si el negocio no tiene país, esa fila no se une sola (se une cuando el cliente entra en ese negocio y lo confirma).
+- **Selector de prefijo** en el alta y al pedir un código: por defecto el del país del negocio; el cliente de otro país puede cambiarlo. Las altas nuevas guardan el número completo con prefijo. (Decidido por Misael, 2026-11-20.)
 
 ### 4.3 Verificación por WhatsApp
 - Código de 6 cifras, **caduca a los 5 minutos**, máximo **5 intentos**, de un solo uso.
@@ -62,7 +63,8 @@ Hoy todos los números son de 9 cifras sin prefijo, y Perú y España usan ambos
 1. Se crea (o se localiza) la cuenta de ese número.
 2. Se le unen las filas de `users` de **clientes** cuyo número completo coincide. Las de personal (`admin`) nunca.
 3. **Filas que el cliente no estaba usando en ese momento** (otro negocio, mismo número): como alguien pudo registrarlas con un número ajeno, su contraseña deja de valer (quedan marcadas con `must_change_password`, del PR #4) y se cierran sus sesiones abiertas. El dueño del número entra a ellas por su cuenta.
-4. Todo en una sola operación de base de datos; queda apuntado en un registro (`account_events`) sin datos personales.
+4. **Garantía: no se pierde nada.** Las filas unidas no se borran ni se fusionan: los puntos, los canjes, las reservas y el historial de cada fila siguen en esa fila y en su negocio, y pasan a ser accesibles para el dueño verificado desde su cuenta. La unión solo escribe `account_id` (y, en las filas ajenas, la marca de contraseña y el cierre de sesiones). (Decidido por Misael, 2026-11-20.)
+5. Todo en una sola operación de base de datos; queda apuntado en un registro (`account_events`) sin datos personales.
 
 ### 4.5 Sesión y cambio de negocio
 - El JWT añade `accountId` (opcional). **Los JWT antiguos siguen valiendo**: sin `accountId` la sesión se comporta exactamente como hoy (un solo negocio). No se cierra la sesión a nadie.
@@ -108,6 +110,7 @@ Cada fase va en su rama y su PR, se prueba en staging (rehecho como copia de pro
   - cada límite (por móvil, por conexión, diario);
   - misma respuesta y misma duración se envíe o se bloquee;
   - unión: une solo las filas de cliente del mismo número completo; **no** une personal; **no** une un número igual de otro país; invalida la contraseña y las sesiones de las filas que no eran la de la sesión;
+  - **garantía de conservación**: antes y después de unir, cada fila conserva exactamente sus puntos (`total_points`, `available_points`), sus movimientos, canjes y reservas, y su `restaurant_id`; el dueño verificado los ve al entrar en ese negocio; la persona que registró la fila ya no puede entrar;
   - sin verificar, ninguna fila tiene `account_id` (regla clave).
 - **Aceptación:** prueba real con el móvil de Misael en staging y en un negocio de prueba; el código llega por WhatsApp desde el número de la variable; cambiar la variable cambia el número sin tocar código.
 
@@ -130,7 +133,7 @@ Cada fase va en su rama y su PR, se prueba en staging (rehecho como copia de pro
 | Número registrado por otra persona | Regla clave: sin verificación no hay unión. Al unir, las filas ajenas a la sesión pierden contraseña y sesiones (4.4.3) |
 | Mismo número de 9 cifras en dos países | Cuenta por número completo con prefijo (4.2) |
 | Coste y abuso de los códigos | Límites por móvil, conexión y día; tope global con aviso; respuesta uniforme |
-| Meta: el número y la plantilla de autenticación deben estar aprobados | Es requisito previo de F2 (ver decisiones pendientes). Sin eso, F1 se puede hacer igual |
+| Meta: falta la plantilla de autenticación | El número del agente de ventas ya está conectado y respondiendo (comprobado 2026-11-20). Misael solicita la plantilla (anexo A). F1 no depende de esto |
 | Romper la PWA de El Machay | Sin cambios de dominio, inicio ni manifiesto; interruptor apagado por defecto; prueba en la PWA instalada antes de activar |
 | Sesiones de 30 días ya emitidas | El JWT antiguo sigue valiendo (4.5) |
 
@@ -143,10 +146,22 @@ Cada fase va en su rama y su PR, se prueba en staging (rehecho como copia de pro
 6. Vuelta atrás: apagar el interruptor (inmediato); la reversa de la migración solo si hiciera falta.
 
 ## 8. Decisiones pendientes de Misael
-1. **Meta**: ¿el número del agente de ventas ya está activo en la WABA? El agente está desplegado pero sin conectar a Meta; sin número activo y plantilla de autenticación aprobada, F2 no se puede probar de verdad.
-2. **País del número** (4.2): ¿de acuerdo con identificar la cuenta por el número completo y deducir el prefijo del país del negocio?
-3. **Filas ajenas al verificar** (4.4.3): ¿de acuerdo con anular su contraseña y cerrar sus sesiones?
+1. ~~Meta~~ — **Resuelto**: el agente de ventas está conectado y respondiendo (comprobado 2026-11-20). Queda pedir la plantilla de autenticación (anexo A); F1 avanza sin ella.
+2. ~~País del número~~ — **Decidido**: número completo E.164, con selector de prefijo (por defecto, el país del negocio).
+3. ~~Filas ajenas al verificar~~ — **Decidido**: pierden contraseña y sesiones; sus puntos, canjes e historial se conservan y pasan al dueño verificado (4.4.4), con prueba en staging.
 4. **El Machay** (4.7): ¿«Mis negocios» solo en myvipers.es, y en El Machay un enlace?
 5. **Puntos de bienvenida al unirse** con la cuenta a un negocio nuevo: ¿se dan (una vez por negocio)?
 6. **Tope diario de códigos**: ¿300 al día para empezar?
 7. **Recuperar acceso con código**: implica que, con el número verificado, se puede entrar sin contraseña. ¿De acuerdo?
+
+## Anexo A — Plantilla de autenticación que hay que pedir a Meta
+
+- **Categoría:** Autenticación (`AUTHENTICATION`).
+- **Nombre:** `codigo_verificacion` (irá en la variable `WHATSAPP_OTP_TEMPLATE`).
+- **Idioma:** Español (`es`). Basta con este para empezar; se pueden añadir `en` y `pt` más adelante con el mismo nombre.
+- **Texto:** en esta categoría lo fija Meta, no se redacta. Queda: «*{{1}}* es tu código de verificación.»
+- **Opciones a marcar:**
+  - Recomendación de seguridad: sí («Por tu seguridad, no lo compartas.»).
+  - Caducidad del código: sí, **5 minutos** («Este código caduca en 5 minutos.»).
+  - Botón: **Copiar código** (`COPY_CODE`), texto «Copiar código».
+- La plantilla se aprueba para la WABA, así que sirve para cualquier número de esa WABA: cambiar al número dedicado no exige otra plantilla.
