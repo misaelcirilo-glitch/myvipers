@@ -1,6 +1,6 @@
 # PRP-myvipers-006 — Cuenta global de cliente
 
-**Estado:** PROPUESTA — pendiente de revisión de Misael. Nada implementado.
+**Estado:** PROPUESTA — todas las decisiones cerradas (2026-11-21); pendiente de la aprobación final de Misael. Nada implementado.
 **Owner:** Misael · **Depende de:** PR #3 (paso 0), PR #4 (cambio obligatorio de contraseña), PR #5 (canje atómico), PR #6 (pruebas de aislamiento).
 
 ## 1. Objetivo
@@ -51,7 +51,7 @@ Hoy todos los números son de 9 cifras sin prefijo, y Perú y España usan ambos
 ### 4.3 Verificación por WhatsApp
 - Código de 6 cifras, **caduca a los 5 minutos**, máximo **5 intentos**, de un solo uso.
 - En la base de datos nunca se guarda el código ni el teléfono en claro: solo huellas (HMAC con una clave secreta `OTP_PEPPER`).
-- **Límites**: 3 códigos cada 15 minutos y 8 al día por móvil; 20 por hora por conexión; tope diario global configurable (`OTP_DAILY_CAP`, propuesta: 300) con aviso por correo al llegar al 80 %.
+- **Límites**: 3 códigos cada 15 minutos y 8 al día por móvil; 20 por hora por conexión; tope diario global de **300** (`OTP_DAILY_CAP`, configurable) con **alerta** por correo al llegar al 80 % y al alcanzarlo.
 - La respuesta al pedir un código es **la misma y tarda lo mismo** se envíe o no (no revela si un número es cliente).
 - Envío por plantilla de **autenticación** de Meta, desde el número de `WHATSAPP_OTP_PHONE_NUMBER_ID`.
 - Limpieza automática de los registros de códigos con más de 30 días.
@@ -74,12 +74,12 @@ Hoy todos los números son de 9 cifras sin prefijo, y Perú y España usan ambos
 ### 4.6 «Mis negocios» y unirse a un negocio
 - Pantalla `/mis-negocios` (enlace desde Perfil): lista los negocios de la cuenta con logo, puntos y nivel; al tocar uno, cambia de negocio.
 - Cliente sin verificar: ve un aviso «Verifica tu número para ver todos tus negocios».
-- **Unirse**: un cliente con cuenta que abre `/r/[slug]` de un negocio donde no tiene fila ve «Unirme», con la casilla obligatoria «Este negocio verá tu nombre y teléfono». Al aceptar se crea su fila en ese negocio (con sus puntos de bienvenida, una sola vez por cuenta y negocio) y se guarda la fecha del consentimiento.
+- **Unirse**: un cliente con cuenta que abre `/r/[slug]` de un negocio donde no tiene fila ve «Unirme», con la casilla obligatoria «Este negocio verá tu nombre y teléfono». Al aceptar se crea su fila en ese negocio (con los puntos de bienvenida de ese negocio, **una sola vez por cuenta y negocio**; la cantidad la configura cada negocio y puede ser 0) y se guarda la fecha del consentimiento.
 
 ### 4.7 El Machay y su PWA
 - No cambia el dominio, ni la dirección de inicio de la PWA, ni su manifiesto. No hay ninguna redirección.
 - Los clientes de El Machay siguen entrando como hoy. Verificar el número es **opcional** y no bloquea nada.
-- Propuesta: en `el-machay.vercel.app` la app sigue siendo de un solo negocio. «Mis negocios» se muestra solo en `myvipers.es` (en El Machay, un enlace normal «Ver mis otros negocios en myvipers.es»). Así la PWA de El Machay no cambia de aspecto.
+- **Decidido:** en `el-machay.vercel.app` la app sigue siendo de un solo negocio. «Mis negocios» se muestra solo en `myvipers.es` (en El Machay, un enlace normal «Ver mis otros negocios en myvipers.es»). Así la PWA de El Machay no cambia de aspecto.
 
 ## 5. Fases
 
@@ -145,14 +145,16 @@ Cada fase va en su rama y su PR, se prueba en staging (rehecho como copia de pro
 5. Encender el interruptor → prueba real → vigilar registros.
 6. Vuelta atrás: apagar el interruptor (inmediato); la reversa de la migración solo si hiciera falta.
 
-## 8. Decisiones pendientes de Misael
+## 8. Decisiones de Misael (todas cerradas)
 1. ~~Meta~~ — **Resuelto**: el agente de ventas está conectado y respondiendo (comprobado 2026-11-20). Queda pedir la plantilla de autenticación (anexo A); F1 avanza sin ella.
 2. ~~País del número~~ — **Decidido**: número completo E.164, con selector de prefijo (por defecto, el país del negocio).
 3. ~~Filas ajenas al verificar~~ — **Decidido**: pierden contraseña y sesiones; sus puntos, canjes e historial se conservan y pasan al dueño verificado (4.4.4), con prueba en staging.
-4. **El Machay** (4.7): ¿«Mis negocios» solo en myvipers.es, y en El Machay un enlace?
-5. **Puntos de bienvenida al unirse** con la cuenta a un negocio nuevo: ¿se dan (una vez por negocio)?
-6. **Tope diario de códigos**: ¿300 al día para empezar?
-7. **Recuperar acceso con código**: implica que, con el número verificado, se puede entrar sin contraseña. ¿De acuerdo?
+4. ~~El Machay~~ — **Decidido**: «Mis negocios» solo en `myvipers.es`; en El Machay, un enlace (4.7).
+5. ~~Puntos de bienvenida~~ — **Decidido**: se dan una vez por cuenta y negocio, y la cantidad es configurable por negocio (4.6).
+6. ~~Tope de códigos~~ — **Decidido**: límite por número más tope diario de 300, con alerta (4.3).
+7. ~~Entrar con código~~ — **Decidido**: con el número verificado se puede entrar con un código por WhatsApp, que caduca a los 5 minutos (4.3).
+
+No queda ninguna decisión abierta.
 
 ## Anexo A — Plantilla de autenticación que hay que pedir a Meta
 
