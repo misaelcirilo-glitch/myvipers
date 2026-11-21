@@ -15,7 +15,7 @@ const schema = z.object({
     adminName: z.string().min(2, 'Nombre del administrador muy corto'),
     adminPhone: z.string().min(9, 'Teléfono inválido'),
     adminEmail: z.string().email('Email inválido').optional().or(z.literal('')),
-    password: z.string().min(6, 'Mínimo 6 caracteres'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
     country: z.string().optional(),
     notes: z.string().max(500).optional(),
     website: z.string().optional(), // honeypot anti-spam: debe venir vacío

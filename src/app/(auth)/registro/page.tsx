@@ -64,7 +64,7 @@ export default function RegisterPage() {
                         value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
                     />
                     <input
-                        type="password" placeholder={t.auth.createPassword} required
+                        type="password" placeholder={t.auth.createPassword} required minLength={8}
                         className="w-full px-4 py-3.5 bg-[#1a1a2e] border border-[#2a2a3e] rounded-xl text-white placeholder-slate-500 outline-none focus:border-amber-500 transition"
                         value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                     />

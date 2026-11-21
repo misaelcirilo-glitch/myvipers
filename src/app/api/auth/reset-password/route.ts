@@ -6,7 +6,7 @@ import { verifyResetToken } from '@/shared/lib/auth';
 
 const schema = z.object({
     token: z.string().min(10, 'Token inválido'),
-    password: z.string().min(4, 'Mínimo 4 caracteres'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
 });
 
 export async function POST(req: Request) {

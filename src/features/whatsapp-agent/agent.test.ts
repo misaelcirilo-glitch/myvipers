@@ -83,7 +83,7 @@ describe('parseAgentReply', () => {
 });
 
 describe('fallbackReply', () => {
-    test('restaurante → enlace de alta inmediata', () => expect(fallbackReply('restaurant').reply).toContain(SIGNUP_RESTAURANT_URL));
+    test('restaurante → enlace de alta (con revisión)', () => expect(fallbackReply('restaurant').reply).toContain(SIGNUP_RESTAURANT_URL));
     test('tienda → registrar-negocio', () => expect(fallbackReply('retail').reply).toContain(SIGNUP_RETAIL_URL));
     test('desconocido → ambos enlaces', () => {
         const r = fallbackReply(null).reply;

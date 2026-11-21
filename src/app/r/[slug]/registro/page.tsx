@@ -65,8 +65,8 @@ export default function RestaurantRegistroPage({ params }: { params: Promise<{ s
                     </div>
                     <div>
                         <label className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1 block">Contraseña</label>
-                        <input type="password" required minLength={4} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                            placeholder="Mínimo 4 caracteres" className="w-full px-4 py-3 bg-[#1a1a2e] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm" />
+                        <input type="password" required minLength={8} value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                            placeholder="Mínimo 8 caracteres" className="w-full px-4 py-3 bg-[#1a1a2e] border border-white/10 rounded-xl text-white placeholder-slate-600 outline-none focus:border-emerald-500 text-sm" />
                     </div>
                     <div>
                         <label className="text-xs text-slate-400 uppercase tracking-widest font-bold mb-1 block">Código referido (opcional)</label>

@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
@@ -11,7 +12,7 @@ const schema = z.object({
     // contra el país del tenant, con `isValidTenantPhone`.
     phone: z.string().min(7, 'Teléfono inválido'),
     email: z.string().email().optional().or(z.literal('')),
-    password: z.string().min(4).optional(),
+    password: z.string().min(8, 'Mínimo 8 caracteres').optional(),
 });
 
 export async function POST(req: Request) {
@@ -26,8 +27,8 @@ export async function POST(req: Request) {
 
     const { name, email } = parsed.data;
     const phone = parsed.data.phone.replace(/\D/g, '');
-    // Password por defecto: últimos 4 dígitos del teléfono
-    const password = parsed.data.password || phone.slice(-4);
+    // Contraseña temporal al azar (8 cifras). Antes eran las 4 últimas cifras del teléfono: adivinable.
+    const password = parsed.data.password || randomInt(0, 100_000_000).toString().padStart(8, '0');
 
     const [tenant] = await db`SELECT country FROM restaurants WHERE id = ${session.restaurantId} LIMIT 1`;
     if (!isValidTenantPhone(parsed.data.phone, tenant?.country)) {

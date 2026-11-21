@@ -11,7 +11,7 @@ const schema = z.object({
     // contra el país del tenant, con `isValidTenantPhone`.
     phone: z.string().min(7, 'Teléfono inválido'),
     email: z.string().email('Email inválido').optional().or(z.literal('')),
-    password: z.string().min(4, 'Mínimo 4 caracteres'),
+    password: z.string().min(8, 'Mínimo 8 caracteres'),
     referralCode: z.string().optional(),
     restaurantSlug: z.string().optional(),
 });

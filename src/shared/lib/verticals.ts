@@ -20,8 +20,8 @@ export interface StarterReward {
 }
 
 /**
- * Lo que se crea junto con el negocio en su alta (por cualquier vía: /crear-restaurante
- * o aprobación de /registrar-negocio) para que nunca empiece vacío. El dueño luego lo
+ * Lo que se crea junto con el negocio en su alta (al aprobar la solicitud de
+ * /registrar-negocio) para que nunca empiece vacío. El dueño luego lo
  * edita desde su panel.
  */
 export interface StarterKit {
