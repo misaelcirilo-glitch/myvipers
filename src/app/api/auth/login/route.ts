@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/shared/lib/db';
-import { createToken, setSessionCookie } from '@/shared/lib/auth';
-import { phoneKey, resolveLogin } from '@/shared/lib/account-match';
+import { createResetToken, createToken, setSessionCookie } from '@/shared/lib/auth';
+import { mustChangePassword, phoneKey, resolveLogin } from '@/shared/lib/account-match';
 
 const schema = z.object({
     phone: z.string().min(9),
@@ -13,7 +13,7 @@ const schema = z.object({
 });
 
 type Account = {
-    id: string; name: string; phone: string; password_hash: string; role: 'customer' | 'admin' | 'waiter';
+    id: string; name: string; phone: string; password_hash: string; role: 'customer' | 'admin' | 'waiter'; must_change_password: boolean;
     vip_level: string; available_points: number; restaurant_id: string; // NULL solo en la cuenta de plataforma
     restaurant_slug: string | null; restaurant_name: string | null; business_type: string | null;
 };
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
         // sin slug se traen todas y decide la contraseña.
         const result = (restaurantSlug
             ? await db`
-                SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
+                SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points, u.must_change_password,
                        u.restaurant_id, r.slug as restaurant_slug, r.name as restaurant_name, r.business_type
                 FROM users u
                 JOIN restaurants r ON r.id = u.restaurant_id
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
                 LIMIT 1
             `
             : await db`
-                SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points,
+                SELECT u.id, u.name, u.phone, u.password_hash, u.role, u.vip_level, u.available_points, u.must_change_password,
                        u.restaurant_id, r.slug as restaurant_slug, r.name as restaurant_name, r.business_type
                 FROM users u
                 LEFT JOIN restaurants r ON r.id = u.restaurant_id
@@ -70,6 +70,15 @@ export async function POST(req: Request) {
         }
 
         const user = resolution.account;
+
+        // Contraseña temporal (o las 4 últimas cifras del teléfono): no se abre sesión. Se
+        // devuelve un pase de un solo uso (1 h) para elegir una contraseña propia.
+        if (mustChangePassword(user, password)) {
+            return NextResponse.json({
+                mustChangePassword: true,
+                resetToken: await createResetToken(user.id, user.password_hash),
+            });
+        }
 
         const token = await createToken({
             userId: user.id,

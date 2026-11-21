@@ -8,6 +8,7 @@ function RestablecerInner() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const token = searchParams.get('token') || '';
+    const temporal = searchParams.get('motivo') === 'temporal';
     const [form, setForm] = useState({ password: '', confirm: '' });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -66,7 +67,11 @@ function RestablecerInner() {
                     <ShieldCheck size={32} className="text-white" />
                 </div>
                 <h1 className="text-2xl font-black">Nueva contraseña</h1>
-                <p className="text-slate-400 text-sm mt-1">Crea una contraseña para tu cuenta VIP.</p>
+                <p className="text-slate-400 text-sm mt-1">
+                    {temporal
+                        ? 'Tu contraseña era temporal. Elige una propia (mínimo 8 caracteres) para entrar.'
+                        : 'Crea una contraseña para tu cuenta VIP.'}
+                </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

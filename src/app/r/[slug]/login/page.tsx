@@ -21,6 +21,11 @@ export default function RestaurantLoginPage({ params }: { params: Promise<{ slug
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
+            if (data.mustChangePassword) {
+                // Contraseña temporal: antes de entrar hay que elegir una propia.
+                window.location.href = `/restablecer?token=${encodeURIComponent(data.resetToken)}&motivo=temporal`;
+                return;
+            }
             // Admin/waiter entran directo a su panel; los clientes, a la carta
             // (o a puntos si el tenant es retail, que no tiene carta de restaurante).
             // Navegación DURA (ver comentario en (auth)/login): con router.push el
