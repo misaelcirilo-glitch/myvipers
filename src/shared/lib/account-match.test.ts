@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import bcrypt from 'bcryptjs';
-import { resolveLogin, phoneKey } from './account-match';
+import { mustChangePassword, resolveLogin, phoneKey } from './account-match';
 
 // Comparador falso: la "hash" es la contraseña en claro con prefijo, para no gastar bcrypt.
 const fake = async (plain: string, hash: string) => hash === `h:${plain}`;
@@ -35,6 +35,20 @@ describe('resolveLogin (mismo teléfono en varias tiendas)', () => {
         const hash = await bcrypt.hash('secreta', 4);
         const r = await resolveLogin([{ id: 'x', password_hash: hash }], 'secreta');
         expect(r.kind).toBe('one');
+    });
+});
+
+describe('mustChangePassword', () => {
+    it('cuenta marcada: siempre', () => {
+        expect(mustChangePassword({ phone: '934879292', must_change_password: true }, 'una-buena-clave')).toBe(true);
+    });
+    it('contraseña = 4 últimas cifras del teléfono (con o sin prefijo)', () => {
+        expect(mustChangePassword({ phone: '934879292' }, '9292')).toBe(true);
+        expect(mustChangePassword({ phone: '+51 934 879 292', must_change_password: false }, '9292')).toBe(true);
+    });
+    it('contraseña propia y cuenta sin marcar: no', () => {
+        expect(mustChangePassword({ phone: '934879292', must_change_password: false }, 'mi-clave-larga')).toBe(false);
+        expect(mustChangePassword({ phone: '934879292' }, '1234')).toBe(false);
     });
 });
 

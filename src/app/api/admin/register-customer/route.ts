@@ -49,8 +49,8 @@ export async function POST(req: Request) {
     const referralCode = name.substring(0, 3).toUpperCase() + Math.random().toString(36).substring(2, 6).toUpperCase();
 
     const result = await db`
-        INSERT INTO users (name, phone, email, password_hash, role, restaurant_id, referral_code, total_points, available_points)
-        VALUES (${name}, ${phone}, ${email || null}, ${passwordHash}, 'customer', ${session.restaurantId}, ${referralCode}, 50, 50)
+        INSERT INTO users (name, phone, email, password_hash, role, restaurant_id, referral_code, total_points, available_points, must_change_password)
+        VALUES (${name}, ${phone}, ${email || null}, ${passwordHash}, 'customer', ${session.restaurantId}, ${referralCode}, 50, 50, true)
         RETURNING id, name, phone, vip_level, available_points
     `;
 
