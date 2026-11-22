@@ -23,6 +23,11 @@ export default function LoginPage() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
+            if (data.mustChangePassword) {
+                // Contraseña temporal: antes de entrar hay que elegir una propia.
+                window.location.href = `/restablecer?token=${encodeURIComponent(data.resetToken)}&motivo=temporal`;
+                return;
+            }
             if (data.choose) {
                 setChoices(data.accounts);
                 return;
