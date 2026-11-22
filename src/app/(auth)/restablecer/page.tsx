@@ -99,7 +99,7 @@ function RestablecerInner() {
 
 export default function RestablecerPage() {
     return (
-        <div className="min-h-screen flex flex-col px-6 py-8 bg-[#0f0f1a]">
+        <div className="min-h-screen flex flex-col px-6 py-8 bg-[#0f0f1a] text-white">
             <Link href="/login" className="flex items-center gap-2 text-slate-400 text-sm mb-8">
                 <ArrowLeft size={16} /> Volver
             </Link>
