@@ -1,6 +1,7 @@
 -- 019: Esquema de la cuenta global de cliente (PRP-myvipers-006, fase F1). ADITIVA e idempotente.
 --
--- BORRADOR: no aplicar en producción hasta que Misael apruebe el PRP y esta migración.
+-- F1 aprobada por Misael (2026-11-22). Probada en staging (aplicar, 2.ª pasada, reversa).
+-- PRODUCCIÓN: no aplicar hasta su OK expreso, con copia en Neon y fuera del horario de El Machay.
 --
 -- No mueve ni modifica ningún dato existente. Añade:
 --   · customer_accounts: la cuenta global, una por teléfono VERIFICADO (verified_at obligatorio:
