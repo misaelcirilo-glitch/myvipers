@@ -5,5 +5,7 @@
 ## project/ — Proyectos y decisiones activas
 - [PRP-006 F1: 019 en producción](project/prp-006-f1-019-en-produccion.md) — aplicada el 2026-11-23; comando de reversa y, desde la F2, la vuelta atrás segura es la copia de Neon. F2+ solo con OK expreso.
 
+- [PRP-006 F2: códigos por WhatsApp](project/prp-006-f2-codigos.md) — hecha solo en staging con envío simulado; interruptores, límites y qué no encender en producción antes de la F4.
+
 ## feedback/ — Correcciones y preferencias
 - [Capturas con build de producción](feedback/capturas-con-build-de-produccion.md) — capturas y pruebas visuales con `next build` + `next start`, nunca `next dev`; cerrar el servidor al terminar (949 procesos node agotaron la memoria).

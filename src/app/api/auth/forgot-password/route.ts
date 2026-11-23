@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { db } from '@/shared/lib/db';
 import { createResetToken } from '@/shared/lib/auth';
 import { sendPasswordResetEmail } from '@/shared/lib/email';
+import { isLockedPassword } from '@/features/account/locked-password';
 
 const schema = z.object({
     phone: z.string().min(9, 'Teléfono inválido'),
@@ -43,7 +44,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ status: 'not_found' });
         }
 
-        const withEmail = rows.filter(u => u.email);
+        // Las filas unidas a una cuenta global sin ser la de la sesión no se recuperan por
+        // correo (el correo pudo ponerlo otra persona): su dueño entra por la cuenta.
+        const withEmail = rows.filter(u => u.email && !isLockedPassword(u.password_hash));
         if (withEmail.length === 0) {
             return NextResponse.json({ status: 'no_email' });
         }
