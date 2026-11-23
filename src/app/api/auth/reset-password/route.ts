@@ -3,6 +3,7 @@ import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { db } from '@/shared/lib/db';
 import { verifyResetToken } from '@/shared/lib/auth';
+import { isLockedPassword } from '@/features/account/locked-password';
 
 const schema = z.object({
     token: z.string().min(10, 'Token inválido'),
@@ -24,6 +25,11 @@ export async function POST(req: Request) {
 
         const rows = await db`SELECT id, password_hash FROM users WHERE id = ${payload.userId} LIMIT 1`;
         if (rows.length === 0) {
+            return NextResponse.json({ error: 'El enlace no es válido o expiró' }, { status: 400 });
+        }
+
+        // Fila unida a una cuenta global sin ser la de la sesión: no admite contraseña nueva.
+        if (isLockedPassword(rows[0].password_hash)) {
             return NextResponse.json({ error: 'El enlace no es válido o expiró' }, { status: 400 });
         }
 

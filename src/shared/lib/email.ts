@@ -93,3 +93,37 @@ export async function sendAgentHandoffEmail(opts: {
         return { ok: false, error: e instanceof Error ? e.message : 'Error al enviar el correo' };
     }
 }
+
+// Aviso interno: los códigos por WhatsApp de la cuenta global se acercan al tope diario
+// (o lo han alcanzado). Destinatario en OTP_ALERT_EMAIL; si falta, el del agente de ventas.
+export async function sendOtpCapAlertEmail(opts: {
+    level: 'warning' | 'reached';
+    count: number;
+    cap: number;
+    day: string;
+}): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+    const apiKey = process.env.RESEND_API_KEY;
+    const to = process.env.OTP_ALERT_EMAIL || process.env.MV_AGENT_NOTIFY_EMAIL;
+    if (!apiKey || !to) return { ok: false, skipped: true };
+
+    const reached = opts.level === 'reached';
+    const subject = reached
+        ? `MyVipers · tope diario de códigos alcanzado (${opts.count}/${opts.cap})`
+        : `MyVipers · códigos por WhatsApp al ${Math.round((opts.count / opts.cap) * 100)} % del tope diario`;
+    const html = `
+    <div style="font-family:Segoe UI,system-ui,sans-serif;font-size:14px;color:#111">
+      <p><strong>${opts.count} de ${opts.cap}</strong> códigos de verificación pedidos hoy (${opts.day}).</p>
+      <p style="color:#555">${reached
+        ? 'Se ha alcanzado el tope: no se envían más códigos hasta mañana. Si es uso legítimo, sube OTP_DAILY_CAP en Vercel.'
+        : 'Aviso del 80 %. Si no esperabas este volumen, puede ser un abuso: revisa los registros.'}</p>
+    </div>`;
+
+    try {
+        const resend = new Resend(apiKey);
+        const { error } = await resend.emails.send({ from: FROM, to, subject, html });
+        if (error) return { ok: false, error: error.message };
+        return { ok: true };
+    } catch (e: unknown) {
+        return { ok: false, error: e instanceof Error ? e.message : 'Error al enviar el correo' };
+    }
+}
