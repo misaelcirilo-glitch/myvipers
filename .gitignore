@@ -48,3 +48,6 @@ next-env.d.ts
 # Cadenas de conexión efímeras (NUNCA commitear)
 .staging-url
 .prod-url
+
+# Documentos de trabajo locales (no se suben)
+/md myvipers/
